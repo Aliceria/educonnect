@@ -2,11 +2,19 @@
 educonnect/
 ├── src/
 │   ├── modulos/
+│   │   ├── Acompanhamento.tsx
+│   │   ├── Agendamento.tsx
+│   │   ├── Alunos.tsx
+│   │   ├── AreaProfessor.tsx
 │   │   ├── Avaliacoes.tsx
+│   │   ├── Comunicacao.tsx
 │   │   ├── Configuracoes.tsx
+│   │   ├── Dashboard.tsx
 │   │   ├── Disciplinas.tsx
 │   │   ├── Historico.tsx
 │   │   ├── Materiais.tsx
+│   │   ├── Pagamentos.tsx
+│   │   ├── Planejamento.tsx
 │   │   ├── Presenca.tsx
 │   │   ├── Professores.tsx
 │   │   ├── Relatorios.tsx
