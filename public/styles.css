@@ -1,85 +1,102 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
-  color: #242424;
-}
-
-main { max-width: 900px; margin: 40px auto; padding: 0 20px; }
-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0; }
-button { padding: 10px 14px; border: 1px solid #ccc; border-radius: 5px; background: white; color: #242424; cursor: pointer; font: inherit; }
-button[aria-pressed='true'] { background: #245ca6; color: white; border-color: #245ca6; }
-button:focus-visible { outline: 3px solid #242424; outline-offset: 3px; }
-section { padding: 24px; background: white; border: 1px solid #ddd; border-radius: 5px; }
-section h2 { margin-top: 0; }
-
-.professores .cabecalho {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
+:root { font-family: Arial, sans-serif; color: #374442; background: #f5f6f8; font-synthesis: none; font-size: 14px; --borda: #dfe4e3; --verde: #286864; --suave: #eaf3f1; --muted: #697673; }
+* { box-sizing: border-box; }
+body { margin: 0; }
 [hidden] { display: none !important; }
-.cadastro { margin-bottom: 28px; }
-.cadastro .cabecalho, .barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.cadastro fieldset { border: 1px solid #ddd; padding: 16px; margin: 16px 0; min-width: 0; }
-.cadastro .campos { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin: 16px 0; }
-.cadastro label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-.cadastro input, .cadastro select, .cadastro textarea { width: 100%; box-sizing: border-box; font: inherit; padding: 9px; background: white; color: #242424; border: 1px solid #999; border-radius: 4px; }
-.cadastro textarea { min-height: 75px; resize: vertical; }
-.cadastro select[multiple] { min-height: 110px; }
-.cadastro small, .observacao { color: #555; font-size: 14px; }
-.cadastro .acoes, .cadastro .filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 16px 0; }
-.cadastro .tabela { overflow-x: auto; }
-.cadastro table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.cadastro th, .cadastro td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; overflow-wrap: anywhere; }
-.cadastro th { background: #f5f5f5; }
-.cadastro caption { text-align: left; margin-bottom: 8px; font-weight: bold; }
-.cadastro pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 400px; }
-.cadastro .erro { color: #951b1b; padding: 12px; background: #fff0f0; }
-.cadastro .sucesso { color: #205c2c; }
-.cadastro .permissoes { display: flex; gap: 16px; flex-wrap: wrap; }
-.cadastro .permissoes label { flex-direction: row; align-items: center; }
-.cadastro .permissoes input { width: auto; }
-.entrada { max-width: 440px; margin: 30px auto; }
-button:disabled { opacity: .55; cursor: default; }
-@media (max-width:600px) { .cadastro .campos { grid-template-columns: 1fr; } }
-.professores .cabecalho h2 { margin: 0; }
-.professores form { margin: 24px 0; padding: 0 0 24px; border-bottom: 1px solid #ddd; }
-.professores fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
-.professores .campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.professores label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-.professores input, .professores select, .professores textarea {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 9px;
-  border: 1px solid #999;
-  border-radius: 4px;
-  background: white;
-  color: #242424;
-  font: inherit;
-}
-.professores textarea { min-height: 70px; resize: vertical; }
-.professores small { display: block; color: #555; margin-top: 4px; }
-.professores .horario { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 12px; }
-.professores .acoes { display: flex; flex-wrap: wrap; gap: 8px; }
-.professores .formulario-acoes { margin-top: 24px; }
-.professores .principal { color: white; background: #245ca6; border-color: #245ca6; }
-.professores .filtros { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-top: 24px; }
-.professores .filtros label:first-child { flex: 1; min-width: 180px; }
-.professores button:disabled { opacity: .55; cursor: default; }
-.professores .erro { padding: 12px; color: #951b1b; background: #fff0f0; }
-.professores .sucesso { padding: 12px; color: #205c2c; background: #edf8ef; }
-.professores .tabela { overflow-x: auto; }
-.professores table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.professores caption { padding: 10px 0; text-align: left; font-weight: bold; }
-.professores th, .professores td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #ddd; overflow-wrap: anywhere; }
-.professores th { background: #f5f5f5; }
-@media (max-width: 600px) {
-  main { margin: 20px auto; padding: 0 12px; }
-  section { padding: 16px; }
-  .professores .campos { grid-template-columns: 1fr; }
-  .professores .horario { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+button, input, select, textarea { font: inherit; }
+button { background: white; border: 1px solid var(--borda); border-radius: 5px; padding: 9px 13px; color: inherit; cursor: pointer; line-height: 1.3; }
+button:hover:not(:disabled) { background: #f0f5f3; border-color: #afc5bf; }
+button:disabled { opacity: .5; cursor: default; }
+:where(button, input, select, textarea, a, summary):focus-visible { outline: 2px solid var(--verde); outline-offset: 3px; }
+a { color: var(--verde); text-underline-offset: 3px; }
+h2 { font-size: 21px; font-weight: 600; letter-spacing: -.35px; margin: 0 0 22px; color: #293b37; }
+h3 { font-size: 15px; font-weight: 600; margin: 0 0 16px; }
+h4 { font-size: 13px; margin: 24px 0 14px; }
+p { line-height: 1.6; }
+small, .observacao { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.aplicacao { min-height: 100dvh; }
+.lateral { position: fixed; inset: 0 auto 0 0; width: 216px; background: white; border-right: 1px solid var(--borda); display: flex; flex-direction: column; z-index: 10; }
+.marca { min-height: 74px; padding: 20px 24px; border-bottom: 1px solid var(--borda); display: flex; flex-direction: column; gap: 4px; }
+.marca strong { font-size: 18px; letter-spacing: -.6px; color: var(--verde); }
+.marca span { font-size: 11px; color: var(--muted); }
+.lateral nav { padding: 14px 12px; overflow-y: auto; }
+.grupo-menu { margin-bottom: 24px; }
+.grupo-menu p { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 14px 12px 9px; }
+.grupo-menu button { display: block; width: 100%; text-align: left; background: transparent; border: 0; border-left: 2px solid transparent; padding: 11px 14px; font-size: 13px; margin: 3px 0; }
+.grupo-menu button[aria-pressed='true'] { background: var(--suave); color: var(--verde); border-left-color: var(--verde); font-weight: 600; }
+.conta { border-top: 1px solid var(--borda); margin-top: auto; padding: 16px 12px; display: flex; align-items: center; gap: 9px; }
+.avatar { background: var(--suave); color: var(--verde); width: 29px; height: 29px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-size: 10px; }
+.conta div { min-width: 0; flex: 1; }
+.conta strong { display: block; font-size: 11px; overflow-wrap: anywhere; font-weight: 500; }
+.conta small { font-size: 10px; }
+.conta button { font-size: 11px; padding: 6px; border-color: transparent; }
+.area-principal { margin-left: 216px; }
+.topo { height: 59px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--borda); background: white; font-size: 12px; }
+.topo time { font-size: 11px; color: var(--muted); }
+#conteudo { padding: 28px 30px 60px; max-width: 1440px; outline: none; }
+.pagina-modulo { min-width: 0; }
+.cadastro, .professores { background: white; border: 1px solid var(--borda); border-radius: 6px; padding: 24px; margin-bottom: 20px; min-width: 0; }
+.cabecalho, .barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cabecalho h2, .cabecalho h3 { margin: 0; }
+.cabecalho { margin-bottom: 20px; }
+.cabecalho button, button[type='submit'], .principal { background: var(--verde); border-color: var(--verde); color: white; }
+.cabecalho button:hover:not(:disabled), button[type='submit']:hover:not(:disabled), .principal:hover:not(:disabled) { background: #205550; color: white; }
+fieldset { min-width: 0; border: 1px solid var(--borda); border-radius: 5px; margin: 20px 0; padding: 20px; }
+legend { padding: 0 7px; color: var(--muted); font-size: 12px; }
+.campos { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px 24px; margin: 18px 0; }
+label { display: flex; flex-direction: column; gap: 7px; font-size: 12px; margin-bottom: 10px; }
+input, select, textarea { width: 100%; min-width: 0; padding: 10px; color: #34443f; background: white; border: 1px solid #cfd8d4; border-radius: 4px; }
+input::placeholder, textarea::placeholder { color: #828c89; }
+textarea { min-height: 84px; resize: vertical; }
+select[multiple] { min-height: 114px; }
+input[type='checkbox'] { width: 15px; height: 15px; accent-color: var(--verde); }
+input[type='file'] { font-size: 12px; }
+input::file-selector-button { padding: 5px 10px; border: 1px solid var(--borda); background: #f5f7f6; color: inherit; border-radius: 3px; margin-right: 12px; }
+.acoes, .filtros { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 18px 0; }
+.filtros { align-items: end; }
+.filtros label { margin: 0; min-width: 180px; max-width: 380px; flex: 1; }
+.tabela { overflow-x: auto; margin-top: 18px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+caption { text-align: left; font-size: 11px; color: var(--muted); padding-bottom: 14px; }
+th, td { text-align: left; padding: 14px 12px; border-bottom: 1px solid #edf0ef; vertical-align: top; overflow-wrap: anywhere; }
+th { font-size: 10px; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); background: #fafbfA; }
+tbody tr:hover { background: #fbfcfc; }
+td .acoes { margin: 0; }
+td button { font-size: 11px; padding: 7px 10px; white-space: nowrap; }
+.erro { padding: 12px 15px; background: #fbefed; color: #98463b; border-radius: 4px; }
+.sucesso { padding: 12px 15px; color: #32664d; background: #eef5f0; border-radius: 4px; }
+.horario { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; align-items: end; margin: 12px 0; }
+.horario label { margin: 0; }
+.formulario-acoes { margin-top: 24px; }
+.permissoes { display: flex; flex-wrap: wrap; gap: 12px 20px; }
+.permissoes label { flex-direction: row; align-items: center; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 440px; font-size: 11px; }
+summary { cursor: pointer; color: var(--verde); }
+progress { width: min(320px,100%); height: 7px; accent-color: var(--verde); border: 0; border-radius: 4px; overflow: hidden; background: #edf1ef; }
+progress::-webkit-progress-bar { background: #edf1ef; }
+progress::-webkit-progress-value { background: #608b7e; }
+progress::-moz-progress-bar { background: #608b7e; }
+.acesso { max-width: 440px; margin: 8vh auto; padding: 20px; }
+.acesso .marca { border: 0; padding: 0 0 28px; }
+.entrada { padding: 28px; }
+.entrada fieldset { border: 0; padding: 0; }
+.entrada button { margin: 8px 8px 0 0; }
+.pular { position: fixed; top: -100px; left: 20px; z-index: 20; padding: 12px; background: white; }
+.pular:focus { top: 12px; }
+@media (max-width: 900px) { .lateral { width: 185px; } .area-principal { margin-left: 185px; } #conteudo { padding: 22px 20px; } .cadastro,.professores { padding: 20px; } }
+@media (max-width: 640px) {
+ .lateral { position: static; width: 100%; border-right: 0; border-bottom: 1px solid var(--borda); }
+ .marca { min-height: auto; padding: 16px 20px; }
+ .lateral nav { display: flex; gap: 18px; overflow-x: auto; padding: 8px 14px; }
+ .grupo-menu { flex-shrink: 0; margin: 0; }
+ .grupo-menu p { margin: 4px 8px; }
+ .grupo-menu button { display: inline-block; width: auto; padding: 9px; }
+ .conta { padding: 10px 18px; }
+ .area-principal { margin-left: 0; }
+ .topo { height: 46px; padding: 0 18px; }
+ #conteudo { padding: 20px 12px; }
+ .cadastro,.professores { padding: 18px 14px; }
+ .campos { grid-template-columns: 1fr; gap: 10px; }
+ .horario { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ h2 { font-size: 19px; }
+ th,td { padding: 12px 8px; }
 }
