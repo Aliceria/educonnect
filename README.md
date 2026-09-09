@@ -132,8 +132,6 @@ educonnect/
 └── vite.config.ts
 ```
 
-> Observação: a árvore acima mostra apenas os itens rastreados no repositório. Os diretórios ignorados pelo Git no arquivo [.gitignore](.gitignore) — como `dados/`, `documentacaoMarcos/`, `node_modules/` e `dist/` — foram omitidos.
-
 O backend principal fica em `src/servidor.ts`, e a lógica dos módulos está em `src/modulos/`.
 
 ## Fluxo do sistema
