@@ -45,6 +45,25 @@ export function abrirBanco(caminho: string) {
     CREATE INDEX IF NOT EXISTS historico_modulo ON historico(modulo, id);
     CREATE INDEX IF NOT EXISTS compartilhamentos_material ON compartilhamentos(materialId);
   `);
+  function mascararValor(valor: unknown): unknown {
+    if (valor === null || valor === undefined) return valor;
+    if (typeof valor === 'string') return valor;
+    if (Array.isArray(valor)) return valor.map((item) => mascararValor(item));
+    if (typeof valor === 'object') {
+      const resultado: Record<string, unknown> = {};
+      for (const [chave, item] of Object.entries(valor as Record<string, unknown>)) {
+        if (
+          ['senha', 'recuperacao', 'token', 'hash', 'conteudo', 'arquivo', 'anexo', 'telefone', 'email', 'contatoResponsavel', 'emailResponsavel'].includes(chave)
+        ) {
+          resultado[chave] = '[mascarado]';
+          continue;
+        }
+        resultado[chave] = mascararValor(item);
+      }
+      return resultado;
+    }
+    return valor;
+  }
   function evento(
     usuario: Usuario,
     modulo: string,
@@ -52,6 +71,7 @@ export function abrirBanco(caminho: string) {
     registroId: string,
     detalhes: Dados = {},
   ) {
+    const detalhesSeguros = mascararValor(detalhes) as Dados;
     db.prepare(
       'INSERT INTO historico (data,usuarioId,usuario,modulo,acao,registroId,detalhes) VALUES (?,?,?,?,?,?,?)',
     ).run(
@@ -61,7 +81,7 @@ export function abrirBanco(caminho: string) {
       modulo,
       acao,
       registroId,
-      JSON.stringify(detalhes),
+      JSON.stringify(detalhesSeguros),
     );
   }
   function listar(tipo: string, usuario: Usuario): Registro[] {
