@@ -217,7 +217,7 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
           professores: professores
             .listar()
             .filter((p) => usuario.perfil === 'Administrador' || p.id === usuario.professorId)
-            .map((p) => ({ id: p.id, nome: p.nome })),
+            .map((p) => ({ ...p })),
           materiais:
             usuario.perfil === 'Administrador' ||
             usuario.permissoes.some((p) => ['planejamento', 'materiais'].includes(p))

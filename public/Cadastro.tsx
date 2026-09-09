@@ -21,6 +21,8 @@ export type Referencia = {
   nome?: string;
   data?: string;
   alunoId?: string;
+  professorId?: string;
+  horarios?: Array<{ dia: number; inicio: string; fim: string }>;
   dados?: Dados;
 };
 type Props = {
@@ -29,7 +31,7 @@ type Props = {
   campos: Campo[];
   aviso?: string;
   valoresIniciais?: Dados;
-  complementoFormulario?: (dados: Dados) => ReactNode;
+  complementoFormulario?: (dados: Dados, referencias: Record<string, Referencia[]>) => ReactNode;
   acoes?: (r: Registro) => ReactNode;
   rodape?: (registros: Registro[], referencias: Record<string, Referencia[]>) => ReactNode;
 };
@@ -273,7 +275,7 @@ export default function Cadastro({
                 );
               })}
             </div>
-            {complementoFormulario?.(form)}
+            {complementoFormulario?.(form, referencias)}
             <div className="acoes">
               <button type="submit">{ocupado ? 'Salvando...' : 'Salvar'}</button>
               <button type="button" onClick={() => setForm(null)}>

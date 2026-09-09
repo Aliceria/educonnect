@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Cadastro from './Cadastro';
+import Cadastro, { type Referencia } from './Cadastro';
 import type { Registro } from '../src/banco';
 import { api } from './api';
 function horarioFinal(hora: string, duracao: unknown) {
@@ -16,6 +16,26 @@ function horarioFinal(hora: string, duracao: unknown) {
     (total === 1440 ? ' (meia-noite)' : '')
   );
 }
+function horarioForaDisponibilidade(dados: Record<string, unknown>, referencias: Record<string, Referencia[]>) {
+  if (!dados.data || !dados.hora || !dados.alunoId || typeof dados.duracaoMinutos !== 'number') return false;
+  const aluno = referencias.alunos?.find((item) => item.id === String(dados.alunoId));
+  const professorId = aluno?.professorId;
+  const professor = referencias.professores?.find((item) => item.id === professorId);
+  const horarios = professor?.horarios ?? [];
+  if (!horarios.length) return false;
+
+  const data = new Date(`${String(dados.data)}T12:00:00`);
+  const diaSemana = data.getDay();
+  const inicio = Number(String(dados.hora).slice(0, 2)) * 60 + Number(String(dados.hora).slice(3));
+  const fim = inicio + Number(dados.duracaoMinutos);
+
+  return !horarios.some((horario) => {
+    const inicioProfessor = Number(horario.inicio.slice(0, 2)) * 60 + Number(horario.inicio.slice(3));
+    const fimProfessor = Number(horario.fim.slice(0, 2)) * 60 + Number(horario.fim.slice(3));
+    return horario.dia === diaSemana && inicio >= inicioProfessor && fim <= fimProfessor;
+  });
+}
+
 export default function Agendamento() {
   const [periodo, setPeriodo] = useState('Semana');
   const [dia, setDia] = useState(new Date().toLocaleDateString('en-CA'));
@@ -103,8 +123,15 @@ export default function Agendamento() {
             opcional: true,
           },
         ]}
-        complementoFormulario={(dados) => (
-          <p role="status">{horarioFinal(String(dados.hora ?? ''), dados.duracaoMinutos)}</p>
+        complementoFormulario={(dados, referencias) => (
+          <>
+            <p role="status">{horarioFinal(String(dados.hora ?? ''), dados.duracaoMinutos)}</p>
+            {horarioForaDisponibilidade(dados, referencias) && (
+              <p className="aviso-disponibilidade" role="alert">
+                Horário fora da disponibilidade do professor.
+              </p>
+            )}
+          </>
         )}
         rodape={(aulas, refs) => {
           const inicio = new Date(dia + 'T12:00:00');

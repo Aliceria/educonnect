@@ -70,9 +70,22 @@ p {
 }
 small,
 .observacao {
-  color: var(--muted);
+  color: #4f615d;
   font-size: 12px;
   line-height: 1.6;
+}
+.professor-contato {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.professor-contato strong {
+  color: #233730;
+  font-size: 13px;
+}
+.professor-contato small {
+  display: block;
+  color: #4f615d;
 }
 .aplicacao {
   min-height: 100dvh;
@@ -362,6 +375,16 @@ td button {
   background: #fbefed;
   color: #98463b;
   border-radius: 4px;
+}
+.aviso-disponibilidade {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: #fbe9e9;
+  border: 1px solid #d98a8a;
+  color: #9c2f2f;
+  font-size: 12px;
+  line-height: 1.5;
 }
 .sucesso {
   padding: 12px 15px;

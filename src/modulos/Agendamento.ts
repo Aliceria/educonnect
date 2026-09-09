@@ -82,20 +82,6 @@ export function validarAula(d: Dados, banco: Banco, usuario: Usuario, id?: strin
     anterior.dados.duracaoMinutos !== duracaoMinutos ||
     String(anterior.dados.status).startsWith('Cancelada') ||
     ['Reagendada', 'Falta do professor'].includes(String(anterior.dados.status));
-  if (ocupa && mudouHorario) {
-    const linha = banco.db.prepare('SELECT cadastro FROM professores WHERE id=?').get(professorId);
-    const professor = linha && JSON.parse(String(linha.cadastro));
-    const semana = new Date(dia + 'T12:00:00Z').getUTCDay();
-    const fim = `${String(Math.floor((inicio + duracaoMinutos) / 60)).padStart(2, '0')}:${String((inicio + duracaoMinutos) % 60).padStart(2, '0')}`;
-    if (
-      !professor?.ativo ||
-      !professor.horarios.some(
-        (h: { dia: number; inicio: string; fim: string }) =>
-          h.dia === semana && hora >= h.inicio && fim <= h.fim,
-      )
-    )
-      throw new ErroCadastro('Horário fora da disponibilidade do professor.');
-  }
   const hoje = new Date().toLocaleDateString('en-CA', {
     timeZone: 'America/Sao_Paulo',
   });

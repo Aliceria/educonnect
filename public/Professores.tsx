@@ -437,9 +437,11 @@ export default function Professores({ administrador = true }: { administrador?: 
                     {encontrados.map((professor) => (
                       <tr key={professor.id}>
                         <td>
-                          {professor.nome}
-                          <small>{professor.email}</small>
-                          <small>{professor.contato}</small>
+                          <div className="professor-contato">
+                            <strong>{professor.nome}</strong>
+                            <small>{professor.email}</small>
+                            <small>{professor.contato}</small>
+                          </div>
                         </td>
                         <td>{professor.disciplinas.join(', ')}</td>
                         <td>{dinheiro.format(professor.valorHora)}</td>
