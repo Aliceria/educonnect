@@ -8,10 +8,10 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     strictPort: true,
-    proxy: { '^/api/': process.env.EDUCONNECT_API_URL ?? 'http://127.0.0.1:3001' },
+    proxy: { '^/api/': 'http://127.0.0.1:3001' },
   },
   preview: {
     host: '127.0.0.1',
-    proxy: { '^/api/': process.env.EDUCONNECT_API_URL ?? 'http://127.0.0.1:3001' },
+    proxy: { '^/api/': 'http://127.0.0.1:3001' },
   },
 });
