@@ -12,6 +12,7 @@ export function consultarHistorico(banco: Banco, usuario: Usuario, parametros: U
   if (inicio && fim && inicio > fim)
     throw new ErroCadastro('A data inicial deve ser anterior à final.');
   const permissoes: Record<string, string> = {
+    alunos:'alunos', aulas:'agendamento', planejamentos:'planejamento', modelos:'planejamento', acompanhamentos:'acompanhamento', necessidades:'acompanhamento', pacotes:'financeiro', comunicacoes:'comunicacao', solicitacoes:'areaProfessor',
     professores: 'professores',
     disciplinas: 'disciplinas',
     conteudos: 'disciplinas',

@@ -90,7 +90,7 @@ export function gerarRelatorio(
     avisos: [],
   };
   if (!ref.alunos.length)
-    rel.avisos.push('Aguardando integração com o cadastro de alunos do módulo 1.');
+    rel.avisos.push('Nenhum aluno cadastrado para este acesso.');
   if (['individual', 'responsavel', 'avaliacoes'].includes(tipo)) {
     rel.colunas = [
       'Aluno',
@@ -176,7 +176,7 @@ export function gerarRelatorio(
     rel.resumo.push(
       `Horas realizadas: ${(realizadas.reduce((s, a) => s + a.duracaoMinutos, 0) / 60).toFixed(2)}`,
     );
-    if (!ref.aulas.length) rel.avisos.push('Aguardando integração com a agenda do módulo 2.');
+    if (!ref.aulas.length) rel.avisos.push('Nenhuma aula cadastrada para este acesso.');
   } else {
     let pagamentos = ref.pagamentos.filter(
       (p) =>
@@ -210,7 +210,11 @@ export function gerarRelatorio(
       `Pendente: ${moeda(pagamentos.filter((p) => p.status !== 'Recebido').reduce((s, p) => s + p.valor, 0))}`,
     );
     if (!ref.pagamentos.length)
-      rel.avisos.push('Aguardando integração com os pagamentos do módulo 5.');
+      rel.avisos.push('Nenhum pagamento cadastrado para este acesso.');
+  }
+  if(['individual','responsavel','evolucao'].includes(tipo)) {
+   const evolucoes=banco.listar('acompanhamentos',usuario).map(r=>r.dados).filter(d=>selecionado(d.alunoId)&&periodo(d.data)).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+   rel.resumo.push(...evolucoes.map(d=>aluno(d.alunoId)+' — '+d.data+': '+d.evolucao+(d.retomar?'; retomar: '+d.retomar:'')));
   }
   return rel;
 }

@@ -139,8 +139,8 @@ export default function Materiais() {
           )}
           <h4>Compartilhar</h4>
           <p>
-            Gere um link válido por 7 dias e envie ao destinatário. O sistema registra a criação do
-            link; não envia mensagens.
+            Crie um link válido por 7 dias e envie ao destinatário. O sistema apenas
+            gera o link; ele não manda mensagens sozinho.
           </p>
           <div className="campos">
             <label>

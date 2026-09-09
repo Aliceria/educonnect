@@ -7,13 +7,16 @@ export type Usuario = {
   id: string;
   nome: string;
   email: string;
-  perfil: 'Administrador' | 'Professor';
+  perfil: 'Administrador' | 'Professor' | 'Aluno' | 'Responsável';
+  alunoId?: string;
+  telefone?: string;
   professorId: string;
   permissoes: string[];
   ativo: boolean;
 };
 export type Registro = { id: string; tipo: string; autorId: string; versao: number; dados: Dados };
 export const modulos = [
+  'alunos', 'agendamento', 'planejamento', 'acompanhamento', 'pagamentos', 'comunicacao', 'areaProfessor', 'dashboard',
   'professores',
   'disciplinas',
   'materiais',
@@ -66,8 +69,8 @@ export function abrirBanco(caminho: string) {
       usuario.perfil === 'Administrador'
         ? db.prepare('SELECT * FROM registros WHERE tipo = ? ORDER BY rowid DESC').all(tipo)
         : db
-            .prepare('SELECT * FROM registros WHERE tipo = ? AND autorId = ? ORDER BY rowid DESC')
-            .all(tipo, usuario.id);
+            .prepare("SELECT * FROM registros WHERE tipo = ? AND CASE WHEN json_extract(dados,'$.professorId') IS NOT NULL THEN json_extract(dados,'$.professorId')=? ELSE autorId=? END ORDER BY rowid DESC")
+            .all(tipo, usuario.professorId, usuario.id);
     return linhas.map((linha) => ({
       id: String(linha.id),
       tipo,
@@ -78,8 +81,8 @@ export function abrirBanco(caminho: string) {
   }
   function buscar(tipo: string, id: string, usuario: Usuario) {
     const linha = db
-      .prepare('SELECT * FROM registros WHERE id=? AND tipo=? AND (?=1 OR autorId=?)')
-      .get(id, tipo, usuario.perfil === 'Administrador' ? 1 : 0, usuario.id);
+      .prepare("SELECT * FROM registros WHERE id=? AND tipo=? AND (?=1 OR CASE WHEN json_extract(dados,'$.professorId') IS NOT NULL THEN json_extract(dados,'$.professorId')=? ELSE autorId=? END)")
+      .get(id, tipo, usuario.perfil === 'Administrador' ? 1 : 0, usuario.professorId, usuario.id);
     if (!linha) throw new ErroCadastro('Registro não encontrado ou sem permissão.', 404);
     return {
       id: String(linha.id),
@@ -113,7 +116,7 @@ export function abrirBanco(caminho: string) {
 }
 export type Banco = ReturnType<typeof abrirBanco>;
 export function permitir(usuario: Usuario, modulo: string, somenteAdmin = false) {
-  if (usuario.perfil !== 'Administrador' && (somenteAdmin || !usuario.permissoes.includes(modulo)))
+  if (['Aluno','Responsável'].includes(usuario.perfil) || (usuario.perfil !== 'Administrador' && (somenteAdmin || !usuario.permissoes.includes(modulo))))
     throw new ErroCadastro('Você não tem permissão para esta operação.', 403);
 }
 export function objeto(valor: unknown): Dados {

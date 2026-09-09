@@ -1,3 +1,11 @@
+import Alunos from './Alunos';
+import Agendamento from './Agendamento';
+import Planejamento from './Planejamento';
+import Acompanhamento from './Acompanhamento';
+import Pagamentos from './Pagamentos';
+import Comunicacao from './Comunicacao';
+import AreaProfessor from './AreaProfessor';
+import Dashboard from './Dashboard';
 import { useEffect, useState } from 'react';
 import type { Usuario } from '../src/banco';
 import { api } from './api';
@@ -12,6 +20,14 @@ import Seguranca, { Entrada } from './Seguranca';
 import Historico from './Historico';
 
 const modulos = [
+  {id:'alunos', nome:'Alunos', tela:Alunos},
+  {id:'agendamento', nome:'Agenda', tela:Agendamento},
+  {id:'planejamento', nome:'Planejamento', tela:Planejamento},
+  {id:'acompanhamento', nome:'Acompanhamento', tela:Acompanhamento},
+  {id:'pagamentos', nome:'Pagamentos', tela:Pagamentos},
+  {id:'comunicacao', nome:'Comunicação', tela:Comunicacao},
+  {id:'areaProfessor', nome:'Minha área', tela:AreaProfessor},
+  {id:'dashboard', nome:'Dashboard', tela:Dashboard},
   { id: 'professores', nome: 'Professores', tela: Professores },
   { id: 'disciplinas', nome: 'Disciplinas', tela: Disciplinas },
   { id: 'materiais', nome: 'Materiais', tela: Materiais },
@@ -24,7 +40,7 @@ const modulos = [
 ];
 export default function App() {
   const [usuario, setUsuario] = useState<(Usuario & { sessaoMinutos?: number }) | null>(null);
-  const [selecionado, setSelecionado] = useState('professores');
+  const [selecionado, setSelecionado] = useState('dashboard');
   const [visitados, setVisitados] = useState<string[]>([]);
   const [aviso, setAviso] = useState('');
   function entrar(u: Usuario) {
@@ -32,7 +48,7 @@ export default function App() {
     setAviso('');
     const primeiro =
       u.perfil === 'Administrador'
-        ? 'professores'
+        ? 'dashboard'
         : (modulos.find((m) => u.permissoes.includes(m.id))?.id ?? '');
     setSelecionado(primeiro);
     setVisitados(primeiro ? [primeiro] : []);
@@ -94,6 +110,9 @@ export default function App() {
         (!['configuracoes', 'seguranca'].includes(m.id) && usuario.permissoes.includes(m.id))),
   );
   const grupos = [
+ {nome:'Visão geral', ids:['dashboard','areaProfessor']},
+ {nome:'Aulas', ids:['alunos','agendamento','planejamento','acompanhamento']},
+ {nome:'Atendimento', ids:['pagamentos','comunicacao']},
     { nome: 'Gestão', ids: ['professores', 'disciplinas', 'materiais'] },
     { nome: 'Acompanhamento', ids: ['avaliacoes', 'presenca', 'relatorios'] },
     { nome: 'Sistema', ids: ['configuracoes', 'seguranca', 'historico'] },
@@ -112,6 +131,7 @@ export default function App() {
         <Entrada onEntrar={entrar} />
       </main>
     );
+  if (['Aluno','Responsável'].includes(usuario.perfil)) return <main className="acesso portal"><header className="cabecalho">{marca}<button onClick={()=>void sair()}>Sair</button></header><AreaProfessor/></main>;
   return (
     <div className="aplicacao">
       <a className="pular" href="#conteudo">

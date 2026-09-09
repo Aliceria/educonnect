@@ -122,8 +122,8 @@ export default function Configuracoes() {
         </form>
       )}
       <p>
-        Horários, valores e modelos ficam disponíveis para os módulos da equipe. Lembretes precisam
-        da integração com Comunicação (6).
+        Horários, valores e modelos ficam disponíveis para os módulos da equipe. Os lembretes são
+        exibidos no dashboard e o envio manual continua sendo feito na área de Comunicação.
       </p>
       <h3>Backup do banco</h3>
       <p>

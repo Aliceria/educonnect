@@ -155,6 +155,7 @@ export function Entrada({ onEntrar }: { onEntrar: (u: Usuario) => void }) {
 }
 
 const permissoes = [
+ 'alunos','agendamento','planejamento','acompanhamento','pagamentos','comunicacao','areaProfessor','dashboard',
   'professores',
   'disciplinas',
   'materiais',
@@ -166,6 +167,7 @@ const permissoes = [
 ];
 export default function Seguranca() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [alunos,setAlunos]=useState<{id:string;nome:string}[]>([]);
   const [professores, setProfessores] = useState<Professor[]>([]);
   const [form, setForm] = useState<(Omit<Usuario, 'id'> & { id?: string; senha: string }) | null>(
     null,
@@ -179,6 +181,7 @@ export default function Seguranca() {
         api<Usuario[]>('/usuarios'),
         api<Professor[]>('/professores'),
       ]);
+      const refs=await api<{alunos:{id:string;nome:string}[]}>('/referencias');setAlunos(refs.alunos);
       setUsuarios(u);
       setProfessores(p);
     } catch (e) {
@@ -289,7 +292,7 @@ export default function Seguranca() {
                   }
                 >
                   <option>Professor</option>
-                  <option>Administrador</option>
+                  <option>Administrador</option><option>Aluno</option><option>Responsável</option>
                 </select>
               </label>
               <label>
@@ -307,6 +310,7 @@ export default function Seguranca() {
                   ))}
                 </select>
               </label>
+              {['Aluno','Responsável'].includes(form.perfil)&&<label>Aluno vinculado<select required value={form.alunoId??''} onChange={e=>setForm({...form,alunoId:e.target.value})}><option value="">Selecione</option>{alunos.map(a=><option key={a.id} value={a.id}>{a.nome}</option>)}</select></label>}
               <label>
                 Status
                 <select
@@ -318,7 +322,7 @@ export default function Seguranca() {
                 </select>
               </label>
             </div>
-            <h4>Módulos permitidos</h4>
+            <h4>Módulos permitidos</h4><p>Aluno e responsável acessam somente sua área e os materiais compartilhados para seu vínculo. As permissões abaixo se aplicam ao professor.</p>
             <div className="permissoes">
               {permissoes.map((p) => (
                 <label key={p}>

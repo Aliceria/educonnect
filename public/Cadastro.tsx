@@ -6,7 +6,7 @@ import type { Registro, Dados } from '../src/banco';
 export type Campo = {
   nome: string;
   rotulo: string;
-  tipo?: 'area' | 'numero' | 'data' | 'multiplo';
+  tipo?: 'area' | 'numero' | 'data' | 'hora' | 'multiplo';
   opcoes?: string[];
   fonte?: string;
   depende?: string;
@@ -26,11 +26,12 @@ type Props = {
   tipo: string;
   campos: Campo[];
   aviso?: string;
+  valoresIniciais?: Dados;
   acoes?: (r: Registro) => ReactNode;
   rodape?: (registros: Registro[], referencias: Record<string, Referencia[]>) => ReactNode;
 };
 
-export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape }: Props) {
+export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape, valoresIniciais }: Props) {
   const [lista, setLista] = useState<Registro[]>([]);
   const [referencias, setReferencias] = useState<Record<string, Referencia[]>>({});
   const [form, setForm] = useState<Dados | null>(null);
@@ -44,7 +45,7 @@ export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape }:
     setErro('');
     try {
       const fontes = [...new Set(campos.flatMap((c) => (c.fonte ? [c.fonte] : [])))];
-      const relacionadas = fontes.filter((f) => !['alunos', 'aulas'].includes(f));
+      const relacionadas = fontes.filter((f) => !['alunos', 'aulas', 'professores', 'pacotes'].includes(f));
       const [registros, referencias, listas] = await Promise.all([
         api<Registro[]>(`/registros/${tipo}`),
         api<Record<string, Referencia[]>>('/referencias'),
@@ -79,6 +80,9 @@ export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape }:
         : Object.fromEntries(campos.map((c) => [c.nome, c.inicial ?? c.opcoes?.[0] ?? ''])),
     );
   }
+  useEffect(() => {
+    if (valoresIniciais) { abrir(); setForm({...Object.fromEntries(campos.map(c=>[c.nome,c.inicial??c.opcoes?.[0]??''])),...valoresIniciais}); }
+  }, [valoresIniciais]);
   function mudar(campo: Campo, valor: unknown) {
     setForm((anterior) => {
       const novo = { ...anterior, [campo.nome]: valor };
@@ -210,7 +214,7 @@ export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape }:
                     ) : (
                       <input
                         required={!c.opcional}
-                        type={c.tipo === 'numero' ? 'number' : c.tipo === 'data' ? 'date' : 'text'}
+                        type={c.tipo === 'numero' ? 'number' : c.tipo === 'data' ? 'date' : c.tipo === 'hora' ? 'time' : 'text'}
                         min={c.minimo ?? 0}
                         step="0.01"
                         maxLength={2000}
@@ -220,7 +224,7 @@ export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape }:
                     )}
                     {c.fonte && opcoes.length === 0 && (
                       <small>
-                        Nenhuma opção disponível. Cadastre ou integre os dados correspondentes.
+                        Nenhuma opção disponível. Cadastre os dados primeiro ou conecte a fonte correta.
                       </small>
                     )}
                   </label>

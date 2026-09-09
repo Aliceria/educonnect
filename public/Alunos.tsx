@@ -1,0 +1,17 @@
+import {api} from './api';
+import {useState} from 'react';
+import Cadastro from './Cadastro';
+import type {Campo} from './Cadastro';
+import type {Registro} from '../src/banco';
+const campos:Campo[]=[
+ {nome:'nome',rotulo:'Nome completo'},{nome:'idade',rotulo:'Idade',tipo:'numero',minimo:1},{nome:'professorId',rotulo:'Professor responsável',fonte:'professores'},
+ {nome:'telefone',rotulo:'Telefone',opcional:true},{nome:'email',rotulo:'E-mail',opcional:true},{nome:'escola',rotulo:'Escola',opcional:true},{nome:'serie',rotulo:'Série / ano',opcional:true},
+ {nome:'disciplina',rotulo:'Disciplinas / áreas de estudo'},{nome:'responsavel',rotulo:'Responsável legal (obrigatório para menor)',opcional:true},{nome:'contatoResponsavel',rotulo:'Telefone do responsável',opcional:true},{nome:'emailResponsavel',rotulo:'E-mail do responsável',opcional:true},{nome:'parentesco',rotulo:'Parentesco',opcional:true},{nome:'autorizacao',rotulo:'Registro da autorização, quando aplicável',tipo:'area',opcional:true},
+ {nome:'dificuldade',rotulo:'Dificuldades nos conteúdos',tipo:'area',opcional:true},{nome:'objetivo',rotulo:'Objetivo',opcoes:['Reforço','Recuperação','Prova','ENEM','Vestibular','Acompanhamento escolar']},{nome:'modalidade',rotulo:'Modalidade',opcoes:['Presencial','On-line','Híbrida']},{nome:'endereco',rotulo:'Endereço',opcional:true},{nome:'disponibilidade',rotulo:'Dias e horários disponíveis',tipo:'area',opcional:true},{nome:'observacoes',rotulo:'Observações pedagógicas',tipo:'area',opcional:true},{nome:'status',rotulo:'Situação',opcoes:['Ativo','Inativo']}
+];
+export default function Alunos(){
+ const [aluno,setAluno]=useState<Registro|null>(null);const [historico,setHistorico]=useState<Registro[]>([]);const [erro,setErro]=useState('');
+ const titulos:Record<string,string>={aulas:'Aula',planejamentos:'Planejamento',acompanhamentos:'Acompanhamento',avaliacoes:'Avaliação',presencas:'Presença',aprendizados:'Aprendizado',pagamentos:'Pagamento'};
+ const detalhes:Record<string,string>={status:'Situação',hora:'Horário',previsto:'Previsto',trabalhado:'Trabalhado',tarefa:'Tarefa',evolucao:'Evolução',dificuldades:'Dificuldades',retomar:'Retomar',nota:'Nota',notaMaxima:'Nota máxima',valor:'Valor',vencimento:'Vencimento',forma:'Forma de pagamento'};
+ return <><h2>Alunos</h2><Cadastro titulo="Cadastro de alunos" tipo="alunos" campos={campos} aviso="Informações sobre saúde ou adaptações ficam em Necessidades educacionais, na tela Acompanhamento." acoes={r=><button onClick={async()=>{setErro('');setAluno(null);try{const ficha=await api<{aluno:Registro;registros:Registro[]}>('/alunos/'+r.id+'/historico');setAluno(ficha.aluno);setHistorico(ficha.registros);}catch(e){setErro((e as Error).message);}}}>Ver ficha</button>}/>{erro&&<p role="alert">{erro}</p>}{aluno&&<section className="cadastro"><div className="cabecalho"><h3>{String(aluno.dados.nome)}</h3><button onClick={()=>setAluno(null)}>Fechar ficha</button></div><dl className="campos">{campos.filter(c=>c.nome!=='professorId').map(c=><div key={c.nome}><dt>{c.rotulo}</dt><dd>{String(aluno.dados[c.nome]||'Não informado')}</dd></div>)}</dl><h3>Histórico do aluno</h3>{historico.map(r=><details key={r.id}><summary>{titulos[r.tipo]} — {String(r.dados.data??r.dados.vencimento??r.dados.nome??'Situação atual')}</summary>{Object.entries(detalhes).filter(([campo])=>r.dados[campo]!==undefined&&r.dados[campo]!=='').map(([campo,rotulo])=><p key={campo}>{rotulo}: {String(r.dados[campo])}</p>)}</details>)}{!historico.length&&<p>Nenhum registro disponível.</p>}</section>}</>;
+}
