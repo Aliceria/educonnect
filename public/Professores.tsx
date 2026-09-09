@@ -132,6 +132,7 @@ export default function Professores({ administrador = true }: { administrador?: 
         dados,
       );
       atualizarLista(professor);
+      window.dispatchEvent(new Event('cadastro-atualizado'));
       setFormulario(null);
       setMensagem(original ? 'Cadastro atualizado.' : 'Professor cadastrado.');
     } catch (e) {

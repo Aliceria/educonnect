@@ -19,16 +19,17 @@ import { validarAluno, historicoAluno } from './modulos/Alunos.ts';
 import { validarAula, reagendar, repetirAula } from './modulos/Agendamento.ts';
 import { validarPlanejamento, validarModelo } from './modulos/Planejamento.ts';
 import { validarAcompanhamento, validarNecessidade } from './modulos/Acompanhamento.ts';
-import { validarPacote, validarPagamento, saldoPacote } from './modulos/Pagamentos.ts';
+import {
+  validarPacote,
+  validarPagamento,
+  saldoPacote,
+  situacaoPagamento,
+} from './modulos/Pagamentos.ts';
 import { validarComunicacao, prepararEnvio } from './modulos/Comunicacao.ts';
 import { resumoDashboard } from './modulos/Dashboard.ts';
 import { meusDados, solicitarPrivacidade, responderPrivacidade } from './modulos/AreaProfessor.ts';
 
-export function criarServidor(
-  caminhoBanco: string,
-  fontesExternas?: Fontes,
-  pastaBackup?: string,
-) {
+export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pastaBackup?: string) {
   const banco = abrirBanco(caminhoBanco);
   const fontes = fontesExternas ?? fontesDoBanco(banco);
   const professores = abrirProfessores(banco.db);
@@ -147,10 +148,19 @@ export function criarServidor(
         const link = banco.db.prepare('SELECT * FROM compartilhamentos WHERE id=?').get(publico[1]);
         if (!link || Date.now() - Date.parse(String(link.data)) > 7 * 86400000)
           throw new ErroCadastro('Link expirado ou inválido.', 404);
-        if(['Aluno','Responsável'].includes(leitor.perfil)) {
-          if(leitor.alunoId!==link.alunoId||leitor.perfil!==link.destinatario)throw new ErroCadastro('Material não compartilhado com esta conta.',403);
-        } else {permitir(leitor,'materiais');banco.buscar('materiais', String(link.materialId), leitor);}
-        banco.evento(leitor,'materiais','Material compartilhado acessado',String(link.materialId));
+        if (['Aluno', 'Responsável'].includes(leitor.perfil)) {
+          if (leitor.alunoId !== link.alunoId || leitor.perfil !== link.destinatario)
+            throw new ErroCadastro('Material não compartilhado com esta conta.', 403);
+        } else {
+          permitir(leitor, 'materiais');
+          banco.buscar('materiais', String(link.materialId), leitor);
+        }
+        banco.evento(
+          leitor,
+          'materiais',
+          'Material compartilhado acessado',
+          String(link.materialId),
+        );
         const linha = banco.db
           .prepare('SELECT dados FROM registros WHERE id=? AND tipo=?')
           .get(String(link.materialId), 'materiais');
@@ -178,18 +188,42 @@ export function criarServidor(
         responder(200, {});
         return;
       }
-      const solicitacao=/^\/api\/privacidade\/([a-f0-9-]+)$/.exec(caminho);
-      if(solicitacao&&metodo==='PUT'){responder(200,responderPrivacidade(banco,usuario,solicitacao[1],corpo));return;}
-      if(caminho==='/api/auth/perfil'&&metodo==='PUT'){responder(200,acesso.perfil(corpo,usuario));return;}
-      if(caminho==='/api/meus-dados'&&metodo==='GET'){responder(200,meusDados(banco,usuario));return;}
-      if(caminho==='/api/privacidade'&&metodo==='POST'){responder(201,solicitarPrivacidade(banco,usuario,corpo));return;}
-      if(['Aluno','Responsável'].includes(usuario.perfil))throw new ErroCadastro('Esta conta acessa apenas sua área e materiais compartilhados.',403);
+      const solicitacao = /^\/api\/privacidade\/([a-f0-9-]+)$/.exec(caminho);
+      if (solicitacao && metodo === 'PUT') {
+        responder(200, responderPrivacidade(banco, usuario, solicitacao[1], corpo));
+        return;
+      }
+      if (caminho === '/api/auth/perfil' && metodo === 'PUT') {
+        responder(200, acesso.perfil(corpo, usuario));
+        return;
+      }
+      if (caminho === '/api/meus-dados' && metodo === 'GET') {
+        responder(200, meusDados(banco, usuario));
+        return;
+      }
+      if (caminho === '/api/privacidade' && metodo === 'POST') {
+        responder(201, solicitarPrivacidade(banco, usuario, corpo));
+        return;
+      }
+      if (['Aluno', 'Responsável'].includes(usuario.perfil))
+        throw new ErroCadastro(
+          'Esta conta acessa apenas sua área e materiais compartilhados.',
+          403,
+        );
       if (caminho === '/api/referencias' && metodo === 'GET') {
         const ref = referencias(fontes, usuario);
         responder(200, {
           ...ref,
-          professores: professores.listar().filter(p=>usuario.perfil==='Administrador'||p.id===usuario.professorId).map(p=>({id:p.id,nome:p.nome})),
-          pacotes: banco.listar('pacotes',usuario).map(p=>({id:p.id,nome:p.dados.nome})),
+          professores: professores
+            .listar()
+            .filter((p) => usuario.perfil === 'Administrador' || p.id === usuario.professorId)
+            .map((p) => ({ id: p.id, nome: p.nome })),
+          materiais:
+            usuario.perfil === 'Administrador' ||
+            usuario.permissoes.some((p) => ['planejamento', 'materiais'].includes(p))
+              ? banco.listar('materiais', usuario).map((m) => ({ id: m.id, nome: m.dados.nome }))
+              : [],
+          pacotes: banco.listar('pacotes', usuario).map((p) => ({ id: p.id, nome: p.dados.nome })),
           pagamentos:
             usuario.perfil === 'Administrador' || usuario.permissoes.includes('financeiro')
               ? ref.pagamentos
@@ -197,18 +231,60 @@ export function criarServidor(
         });
         return;
       }
-      if(caminho==='/api/dashboard'&&metodo==='GET') { permitir(usuario,'dashboard'); responder(200,resumoDashboard(banco,usuario,fontes));return; }
+      if (caminho === '/api/dashboard' && metodo === 'GET') {
+        permitir(usuario, 'dashboard');
+        responder(200, resumoDashboard(banco, usuario, fontes));
+        return;
+      }
 
-
-      const ficha=/^\/api\/alunos\/([a-f0-9-]+)\/historico$/.exec(caminho);
-      if(ficha&&metodo==='GET'){permitir(usuario,'alunos');responder(200,historicoAluno(banco,usuario,ficha[1]));return;}
-      const repeticao=/^\/api\/aulas\/([a-f0-9-]+)\/repetir$/.exec(caminho);
-      if(repeticao&&metodo==='POST'){permitir(usuario,'agendamento');responder(201,transacao(()=>{const novas=repetirAula(banco,usuario,repeticao[1],corpo);const pacoteId=novas[0]?.dados.pacoteId;if(pacoteId){const saldo=saldoPacote(banco,usuario,String(pacoteId));if(saldo.restantes<saldo.agendadas)throw new ErroCadastro('O pacote não tem saldo para todas as repetições.',409);}return novas;}));return;}
-      const reagendamento=/^\/api\/aulas\/([a-f0-9-]+)\/reagendar$/.exec(caminho);
-      if(reagendamento&&metodo==='POST'){permitir(usuario,'agendamento');responder(201,transacao(()=>reagendar(banco,usuario,reagendamento[1],corpo)));return;}
-      const envio=/^\/api\/comunicacoes\/([a-f0-9-]+)\/abrir$/.exec(caminho);
-      if(envio&&metodo==='GET'){permitir(usuario,'comunicacao');responder(200,prepararEnvio(banco,usuario,envio[1]));return;}
-      if(caminho==='/api/saldos'&&metodo==='GET'){permitir(usuario,'pagamentos');permitir(usuario,'financeiro');responder(200,banco.listar('pacotes',usuario).map(p=>saldoPacote(banco,usuario,p.id)));return;}
+      const ficha = /^\/api\/alunos\/([a-f0-9-]+)\/historico$/.exec(caminho);
+      if (ficha && metodo === 'GET') {
+        permitir(usuario, 'alunos');
+        responder(200, historicoAluno(banco, usuario, ficha[1]));
+        return;
+      }
+      const repeticao = /^\/api\/aulas\/([a-f0-9-]+)\/repetir$/.exec(caminho);
+      if (repeticao && metodo === 'POST') {
+        permitir(usuario, 'agendamento');
+        responder(
+          201,
+          transacao(() => {
+            const novas = repetirAula(banco, usuario, repeticao[1], corpo);
+            const pacoteId = novas[0]?.dados.pacoteId;
+            if (pacoteId) {
+              const saldo = saldoPacote(banco, usuario, String(pacoteId));
+              if (saldo.restantes < saldo.agendadas)
+                throw new ErroCadastro('O pacote não tem saldo para todas as repetições.', 409);
+            }
+            return novas;
+          }),
+        );
+        return;
+      }
+      const reagendamento = /^\/api\/aulas\/([a-f0-9-]+)\/reagendar$/.exec(caminho);
+      if (reagendamento && metodo === 'POST') {
+        permitir(usuario, 'agendamento');
+        responder(
+          201,
+          transacao(() => reagendar(banco, usuario, reagendamento[1], corpo)),
+        );
+        return;
+      }
+      const envio = /^\/api\/comunicacoes\/([a-f0-9-]+)\/abrir$/.exec(caminho);
+      if (envio && metodo === 'GET') {
+        permitir(usuario, 'comunicacao');
+        responder(200, prepararEnvio(banco, usuario, envio[1]));
+        return;
+      }
+      if (caminho === '/api/saldos' && metodo === 'GET') {
+        permitir(usuario, 'pagamentos');
+        permitir(usuario, 'financeiro');
+        responder(
+          200,
+          banco.listar('pacotes', usuario).map((p) => saldoPacote(banco, usuario, p.id)),
+        );
+        return;
+      }
       if (caminho === '/api/usuarios' && metodo === 'GET') {
         permitir(usuario, 'seguranca', true);
         responder(200, acesso.listar());
@@ -285,15 +361,27 @@ export function criarServidor(
         }
       }
       const rotas: Record<string, { modulo: string; validar: (d: Dados, id?: string) => Dados }> = {
-        alunos:{modulo:'alunos',validar:d=>validarAluno(d,banco,usuario)},
-        aulas:{modulo:'agendamento',validar:(d,id)=>validarAula(d,banco,usuario,id)},
-        planejamentos:{modulo:'planejamento',validar:(d,id)=>validarPlanejamento(d,banco,usuario,id)},
-        modelos:{modulo:'planejamento',validar:validarModelo},
-        acompanhamentos:{modulo:'acompanhamento',validar:d=>validarAcompanhamento(d,banco,usuario)},
-        necessidades:{modulo:'acompanhamento',validar:d=>validarNecessidade(d,banco,usuario)},
-        pacotes:{modulo:'pagamentos',validar:d=>validarPacote(d,banco,usuario)},
-        pagamentos:{modulo:'pagamentos',validar:d=>validarPagamento(d,banco,usuario)},
-        comunicacoes:{modulo:'comunicacao',validar:d=>validarComunicacao(d,banco,usuario)},
+        alunos: { modulo: 'alunos', validar: (d) => validarAluno(d, banco, usuario) },
+        aulas: { modulo: 'agendamento', validar: (d, id) => validarAula(d, banco, usuario, id) },
+        planejamentos: {
+          modulo: 'planejamento',
+          validar: (d, id) => validarPlanejamento(d, banco, usuario, id),
+        },
+        modelos: { modulo: 'planejamento', validar: validarModelo },
+        acompanhamentos: {
+          modulo: 'acompanhamento',
+          validar: (d) => validarAcompanhamento(d, banco, usuario),
+        },
+        necessidades: {
+          modulo: 'acompanhamento',
+          validar: (d) => validarNecessidade(d, banco, usuario),
+        },
+        pacotes: { modulo: 'pagamentos', validar: (d, id) => validarPacote(d, banco, usuario, id) },
+        pagamentos: { modulo: 'pagamentos', validar: (d) => validarPagamento(d, banco, usuario) },
+        comunicacoes: {
+          modulo: 'comunicacao',
+          validar: (d) => validarComunicacao(d, banco, usuario),
+        },
         disciplinas: { modulo: 'disciplinas', validar: validarDisciplina },
         conteudos: {
           modulo: 'disciplinas',
@@ -324,15 +412,22 @@ export function criarServidor(
           metodo === 'GET' &&
           ['disciplinas', 'conteudos'].includes(tipo) &&
           usuario.permissoes.some((p) =>
-            ['materiais', 'avaliacoes', 'presenca', 'relatorios', 'planejamento', 'acompanhamento'].includes(p),
+            [
+              'materiais',
+              'avaliacoes',
+              'presenca',
+              'relatorios',
+              'planejamento',
+              'acompanhamento',
+            ].includes(p),
           );
         if (!consultaRelacionada) permitir(usuario, rota.modulo);
-        if(['pagamentos','pacotes'].includes(tipo)) permitir(usuario,'financeiro');
+        if (['pagamentos', 'pacotes'].includes(tipo)) permitir(usuario, 'financeiro');
         if (metodo === 'GET') {
-          const resultados = banco
-            .listar(tipo, usuario)
-            .map((r) =>
-              tipo === 'materiais'
+          const resultados = banco.listar(tipo, usuario).map((r) =>
+            tipo === 'pagamentos'
+              ? { ...r, dados: { ...r.dados, status: situacaoPagamento(r.dados) } }
+              : tipo === 'materiais'
                 ? {
                     ...r,
                     anexo:
@@ -343,36 +438,115 @@ export function criarServidor(
                         .get(r.id) ?? null,
                   }
                 : r,
-            );
-          responder(200, id ? banco.buscar(tipo, id, usuario) : resultados);
+          );
+          responder(
+            200,
+            id ? resultados.find((r) => r.id === banco.buscar(tipo, id, usuario).id) : resultados,
+          );
           return;
         }
         if ((!id && metodo === 'POST') || (id && metodo === 'PUT')) {
           responder(
             id ? 200 : 201,
             transacao(() => {
-              const entrada=objeto(corpo.dados);
-              const dados=rota.validar(entrada,id);
- if(tipo==='alunos'&&id&&banco.buscar(tipo,id,usuario).dados.professorId!==dados.professorId&&banco.db.prepare("SELECT id FROM registros WHERE json_extract(dados,'$.alunoId')=? LIMIT 1").get(id))throw new ErroCadastro('O aluno já tem registros vinculados. Mantenha o professor para preservar o acesso ao histórico.');
-              if(dados.alunoId){const aluno=referencias(fontes,usuario).alunos.find(a=>a.id===dados.alunoId);if(aluno)dados.professorId=aluno.professorId;}
-              const r=banco.salvar(tipo,dados,usuario,id,Number(corpo.versao));
-              if(tipo==='aulas'||tipo==='presencas'){
-                const aulaId=tipo==='aulas'?r.id:String(dados.aulaId);
-                const linha=banco.db.prepare("SELECT id FROM registros WHERE tipo='aulas' AND id=?").get(aulaId);
-                if(linha){
-                  const aula=banco.buscar('aulas',aulaId,usuario);
-                  if(tipo==='presencas')banco.salvar('aulas',validarAula({...aula.dados,status:dados.status==='Presente'?'Realizada':dados.status,justificativa:dados.justificativa},banco,usuario,aulaId),usuario,aulaId,aula.versao);
-                  else if(dados.status==='Agendada'){
- const presenca=banco.db.prepare("SELECT id FROM registros WHERE tipo='presencas' AND json_extract(dados,'$.aulaId')=?").get(aulaId);
- if(presenca){banco.db.prepare('DELETE FROM registros WHERE id=?').run(String(presenca.id));banco.evento(usuario,'presencas','Frequência removida ao reabrir aula',String(presenca.id));}
- } else {
-                    const p=banco.db.prepare("SELECT id,versao FROM registros WHERE tipo='presencas' AND json_extract(dados,'$.aulaId')=?").get(aulaId);
-                    banco.salvar('presencas',{aulaId,alunoId:dados.alunoId,professorId:dados.professorId,data:dados.data,status:dados.status,justificativa:dados.justificativa??'',originalId:dados.originalId},usuario,p?String(p.id):undefined,p?Number(p.versao):undefined);
+              const entrada = objeto(corpo.dados);
+              const dados = rota.validar(entrada, id);
+              if (
+                tipo === 'alunos' &&
+                id &&
+                banco.buscar(tipo, id, usuario).dados.professorId !== dados.professorId &&
+                banco.db
+                  .prepare(
+                    "SELECT id FROM registros WHERE json_extract(dados,'$.alunoId')=? LIMIT 1",
+                  )
+                  .get(id)
+              )
+                throw new ErroCadastro(
+                  'O aluno já tem registros vinculados. Mantenha o professor para preservar o acesso ao histórico.',
+                );
+              if (dados.alunoId) {
+                const aluno = referencias(fontes, usuario).alunos.find(
+                  (a) => a.id === dados.alunoId,
+                );
+                if (aluno) dados.professorId = aluno.professorId;
+              }
+              const r = banco.salvar(tipo, dados, usuario, id, Number(corpo.versao));
+              if (tipo === 'aulas' || tipo === 'presencas') {
+                const aulaId = tipo === 'aulas' ? r.id : String(dados.aulaId);
+                const linha = banco.db
+                  .prepare("SELECT id FROM registros WHERE tipo='aulas' AND id=?")
+                  .get(aulaId);
+                if (linha) {
+                  const aula = banco.buscar('aulas', aulaId, usuario);
+                  if (tipo === 'presencas')
+                    banco.salvar(
+                      'aulas',
+                      validarAula(
+                        {
+                          ...aula.dados,
+                          status: dados.status === 'Presente' ? 'Realizada' : dados.status,
+                          justificativa: dados.justificativa,
+                        },
+                        banco,
+                        usuario,
+                        aulaId,
+                      ),
+                      usuario,
+                      aulaId,
+                      aula.versao,
+                    );
+                  else if (dados.status === 'Agendada') {
+                    const presenca = banco.db
+                      .prepare(
+                        "SELECT id FROM registros WHERE tipo='presencas' AND json_extract(dados,'$.aulaId')=?",
+                      )
+                      .get(aulaId);
+                    if (presenca) {
+                      banco.db.prepare('DELETE FROM registros WHERE id=?').run(String(presenca.id));
+                      banco.evento(
+                        usuario,
+                        'presencas',
+                        'Frequência removida ao reabrir aula',
+                        String(presenca.id),
+                      );
+                    }
+                  } else {
+                    const p = banco.db
+                      .prepare(
+                        "SELECT id,versao FROM registros WHERE tipo='presencas' AND json_extract(dados,'$.aulaId')=?",
+                      )
+                      .get(aulaId);
+                    banco.salvar(
+                      'presencas',
+                      {
+                        aulaId,
+                        alunoId: dados.alunoId,
+                        professorId: dados.professorId,
+                        data: dados.data,
+                        status: dados.status,
+                        justificativa: dados.justificativa ?? '',
+                        originalId: dados.originalId,
+                      },
+                      usuario,
+                      p ? String(p.id) : undefined,
+                      p ? Number(p.versao) : undefined,
+                    );
                   }
-                  if(aula.dados.pacoteId){const saldo=saldoPacote(banco,usuario,String(aula.dados.pacoteId));if(saldo.restantes<saldo.agendadas)throw new ErroCadastro('O pacote não tem aulas suficientes.',409);}
+                  if (aula.dados.pacoteId) {
+                    const saldo = saldoPacote(banco, usuario, String(aula.dados.pacoteId));
+                    if (saldo.restantes < saldo.agendadas)
+                      throw new ErroCadastro('O pacote não tem aulas suficientes.', 409);
+                  }
                 }
               }
-              if(tipo==='pacotes'){const saldo=saldoPacote(banco,usuario,r.id);if(saldo.restantes<saldo.agendadas)throw new ErroCadastro('Quantidade menor que as aulas já utilizadas ou agendadas.',409);}
+              if (tipo === 'pacotes') {
+                const saldo = saldoPacote(banco, usuario, r.id);
+                if (saldo.restantes < saldo.agendadas)
+                  throw new ErroCadastro(
+                    'Quantidade menor que as aulas já utilizadas ou agendadas.',
+                    409,
+                  );
+              }
               return r;
             }),
           );

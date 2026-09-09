@@ -40,6 +40,7 @@ export default function Pagamentos() {
             rotulo: 'Aulas contratadas',
             tipo: 'numero',
             minimo: 1,
+            passo: 1,
             inicial: 4,
           },
           { nome: 'valor', rotulo: 'Valor do pacote (R$)', tipo: 'numero' },
@@ -64,9 +65,8 @@ export default function Pagamentos() {
         {saldos.length ? (
           saldos.map((p) => (
             <p key={p.id}>
-              {String(p.dados.nome)}: {p.realizadas} realizadas, {p.cobradas}{' '}
-              faltas/cancelamentos cobrados, {p.restantes} restantes ({p.agendadas}{' '}
-              agendadas).
+              {String(p.dados.nome)}: {p.realizadas} realizadas, {p.cobradas} faltas/cancelamentos
+              cobrados, {p.restantes} restantes ({p.agendadas} agendadas).
             </p>
           ))
         ) : (
@@ -86,10 +86,14 @@ export default function Pagamentos() {
           { nome: 'recebidoEm', rotulo: 'Recebido em', tipo: 'data', opcional: true },
           { nome: 'pacoteId', rotulo: 'Pacote', fonte: 'pacotes', opcional: true },
           { nome: 'forma', rotulo: 'Forma de pagamento', inicial: 'Pix' },
-          { nome: 'comprovante', rotulo: 'Referência do comprovante', tipo: 'area', opcional: true },
+          {
+            nome: 'comprovante',
+            rotulo: 'Referência do comprovante',
+            tipo: 'area',
+            opcional: true,
+          },
         ]}
       />
     </>
   );
 }
-

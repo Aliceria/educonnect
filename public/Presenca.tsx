@@ -6,7 +6,7 @@ export default function Presenca() {
       <Cadastro
         titulo="Frequência das aulas"
         tipo="presencas"
-        aviso="As aulas vêm do módulo 2. O registro de presença não altera cobranças nem créditos do módulo 5."
+        aviso="A presença atualiza a situação da aula e o saldo do pacote conforme a política de faltas e cancelamentos."
         campos={[
           { nome: 'aulaId', rotulo: 'Aula', fonte: 'aulas' },
           {

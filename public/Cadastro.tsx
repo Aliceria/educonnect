@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { ReactNode, FormEvent } from 'react';
 import { api } from './api';
 import type { Registro, Dados } from '../src/banco';
@@ -12,6 +12,8 @@ export type Campo = {
   depende?: string;
   opcional?: boolean;
   minimo?: number;
+  maximo?: number;
+  passo?: number;
   inicial?: string | number;
 };
 export type Referencia = {
@@ -27,11 +29,21 @@ type Props = {
   campos: Campo[];
   aviso?: string;
   valoresIniciais?: Dados;
+  complementoFormulario?: (dados: Dados) => ReactNode;
   acoes?: (r: Registro) => ReactNode;
   rodape?: (registros: Registro[], referencias: Record<string, Referencia[]>) => ReactNode;
 };
 
-export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape, valoresIniciais }: Props) {
+export default function Cadastro({
+  titulo,
+  tipo,
+  campos,
+  aviso,
+  acoes,
+  rodape,
+  valoresIniciais,
+  complementoFormulario,
+}: Props) {
   const [lista, setLista] = useState<Registro[]>([]);
   const [referencias, setReferencias] = useState<Record<string, Referencia[]>>({});
   const [form, setForm] = useState<Dados | null>(null);
@@ -40,26 +52,32 @@ export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape, v
   const [mensagem, setMensagem] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [busca, setBusca] = useState('');
+  const salvando = useRef(false);
+  const consulta = useRef(0);
   async function carregar() {
+    const atual = ++consulta.current;
     setOcupado(true);
     setErro('');
     try {
       const fontes = [...new Set(campos.flatMap((c) => (c.fonte ? [c.fonte] : [])))];
-      const relacionadas = fontes.filter((f) => !['alunos', 'aulas', 'professores', 'pacotes'].includes(f));
+      const relacionadas = fontes.filter(
+        (f) => !['alunos', 'aulas', 'professores', 'pacotes', 'materiais'].includes(f),
+      );
       const [registros, referencias, listas] = await Promise.all([
         api<Registro[]>(`/registros/${tipo}`),
         api<Record<string, Referencia[]>>('/referencias'),
         Promise.all(relacionadas.map((f) => api<Registro[]>(`/registros/${f}`))),
       ]);
+      if (atual !== consulta.current) return;
       relacionadas.forEach((fonte, i) => {
         referencias[fonte] = listas[i];
       });
       setReferencias(referencias);
       setLista(registros);
     } catch (e) {
-      setErro((e as Error).message);
+      if (atual === consulta.current) setErro((e as Error).message);
     } finally {
-      setOcupado(false);
+      if (atual === consulta.current && !salvando.current) setOcupado(false);
     }
   }
   useEffect(() => {
@@ -81,7 +99,13 @@ export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape, v
     );
   }
   useEffect(() => {
-    if (valoresIniciais) { abrir(); setForm({...Object.fromEntries(campos.map(c=>[c.nome,c.inicial??c.opcoes?.[0]??''])),...valoresIniciais}); }
+    if (valoresIniciais) {
+      abrir();
+      setForm({
+        ...Object.fromEntries(campos.map((c) => [c.nome, c.inicial ?? c.opcoes?.[0] ?? ''])),
+        ...valoresIniciais,
+      });
+    }
   }, [valoresIniciais]);
   function mudar(campo: Campo, valor: unknown) {
     setForm((anterior) => {
@@ -92,7 +116,8 @@ export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape, v
   }
   async function salvar(e: FormEvent) {
     e.preventDefault();
-    if (!form || ocupado) return;
+    if (!form || ocupado || salvando.current) return;
+    salvando.current = true;
     setOcupado(true);
     setErro('');
     setMensagem('');
@@ -112,6 +137,7 @@ export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape, v
     } catch (e) {
       setErro((e as Error).message);
     } finally {
+      salvando.current = false;
       setOcupado(false);
     }
   }
@@ -214,9 +240,24 @@ export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape, v
                     ) : (
                       <input
                         required={!c.opcional}
-                        type={c.tipo === 'numero' ? 'number' : c.tipo === 'data' ? 'date' : c.tipo === 'hora' ? 'time' : 'text'}
-                        min={c.minimo ?? 0}
-                        step="0.01"
+                        type={
+                          c.tipo === 'numero'
+                            ? 'number'
+                            : c.tipo === 'data'
+                              ? 'date'
+                              : c.tipo === 'hora'
+                                ? 'time'
+                                : 'text'
+                        }
+                        min={c.tipo === 'numero' ? (c.minimo ?? 0) : undefined}
+                        max={c.maximo}
+                        step={
+                          c.tipo === 'hora'
+                            ? 60
+                            : c.tipo === 'numero'
+                              ? (c.passo ?? 0.01)
+                              : undefined
+                        }
                         maxLength={2000}
                         value={valor}
                         onChange={(e) => mudar(c, e.target.value)}
@@ -224,13 +265,15 @@ export default function Cadastro({ titulo, tipo, campos, aviso, acoes, rodape, v
                     )}
                     {c.fonte && opcoes.length === 0 && (
                       <small>
-                        Nenhuma opção disponível. Cadastre os dados primeiro ou conecte a fonte correta.
+                        Nenhuma opção disponível. Cadastre os dados primeiro ou conecte a fonte
+                        correta.
                       </small>
                     )}
                   </label>
                 );
               })}
             </div>
+            {complementoFormulario?.(form)}
             <div className="acoes">
               <button type="submit">{ocupado ? 'Salvando...' : 'Salvar'}</button>
               <button type="button" onClick={() => setForm(null)}>

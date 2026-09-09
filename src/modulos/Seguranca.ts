@@ -50,7 +50,10 @@ export function seguranca(banco: Banco) {
   function validarUsuario(d: Dados, anterior?: Usuario): Usuario {
     const email = texto(d, 'email', true, 254).toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ErroCadastro('E-mail inválido.');
-    if (!['Administrador', 'Professor', 'Aluno', 'Responsável'].includes(String(d.perfil)) || typeof d.perfil !== 'string')
+    if (
+      !['Administrador', 'Professor', 'Aluno', 'Responsável'].includes(String(d.perfil)) ||
+      typeof d.perfil !== 'string'
+    )
       throw new ErroCadastro('Perfil inválido.');
     if (
       !Array.isArray(d.permissoes) ||
@@ -58,10 +61,20 @@ export function seguranca(banco: Banco) {
     )
       throw new ErroCadastro('Permissões inválidas.');
     if (typeof d.ativo !== 'boolean') throw new ErroCadastro('Status inválido.');
-    const portal=['Aluno','Responsável'].includes(String(d.perfil));
-    const alunoId=portal?texto(d,'alunoId'):'';
-    if(portal){const aluno=banco.db.prepare("SELECT dados FROM registros WHERE tipo='alunos' AND id=?").get(alunoId);if(!aluno||JSON.parse(String(aluno.dados)).status!=='Ativo'||(d.perfil==='Responsável'&&!JSON.parse(String(aluno.dados)).responsavel))throw new ErroCadastro('Selecione um aluno ativo com responsável, quando necessário.');}
-    const professorId = portal?'':texto(d, 'professorId', d.perfil === 'Professor', 100);
+    const portal = ['Aluno', 'Responsável'].includes(String(d.perfil));
+    const alunoId = portal ? texto(d, 'alunoId') : '';
+    if (portal) {
+      const aluno = banco.db
+        .prepare("SELECT dados FROM registros WHERE tipo='alunos' AND id=?")
+        .get(alunoId);
+      if (
+        !aluno ||
+        JSON.parse(String(aluno.dados)).status !== 'Ativo' ||
+        (d.perfil === 'Responsável' && !JSON.parse(String(aluno.dados)).responsavel)
+      )
+        throw new ErroCadastro('Selecione um aluno ativo com responsável, quando necessário.');
+    }
+    const professorId = portal ? '' : texto(d, 'professorId', d.perfil === 'Professor', 100);
     if (professorId) {
       const professor = banco.db
         .prepare('SELECT id FROM professores WHERE id = ?')
@@ -73,9 +86,11 @@ export function seguranca(banco: Banco) {
       nome: texto(d, 'nome', true, 150),
       email,
       perfil: d.perfil as Usuario['perfil'],
-      professorId, alunoId, telefone:texto({...d,telefone:d.telefone??''},'telefone',false,30),
+      professorId,
+      alunoId,
+      telefone: texto({ ...d, telefone: d.telefone ?? '' }, 'telefone', false, 30),
       ativo: d.ativo,
-      permissoes: portal?[]:[...new Set(d.permissoes as string[])],
+      permissoes: portal ? [] : [...new Set(d.permissoes as string[])],
     };
   }
   async function criar(entrada: unknown, autor?: Usuario) {
@@ -119,7 +134,17 @@ export function seguranca(banco: Banco) {
         .get(usuario.professorId);
       if (!linha || !JSON.parse(String(linha.cadastro)).ativo) return false;
     }
-    if(['Aluno','Responsável'].includes(usuario.perfil)) {const aluno=banco.db.prepare("SELECT dados FROM registros WHERE tipo='alunos' AND id=?").get(usuario.alunoId??'');if(!aluno||JSON.parse(String(aluno.dados)).status!=='Ativo')return false;}
+    if (['Aluno', 'Responsável'].includes(usuario.perfil)) {
+      const aluno = banco.db
+        .prepare("SELECT dados FROM registros WHERE tipo='alunos' AND id=?")
+        .get(usuario.alunoId ?? '');
+      if (
+        !aluno ||
+        JSON.parse(String(aluno.dados)).status !== 'Ativo' ||
+        (usuario.perfil === 'Responsável' && !JSON.parse(String(aluno.dados)).responsavel)
+      )
+        return false;
+    }
     return true;
   }
   async function entrar(entrada: unknown, ip: string) {
@@ -211,11 +236,18 @@ export function seguranca(banco: Banco) {
     );
     return { codigoRecuperacao: novoCodigo };
   }
-  function perfil(entrada:unknown,usuario:Usuario) {
-    const d=objeto(entrada);const novo=validarUsuario({...usuario,nome:d.nome,email:d.email,telefone:d.telefone},usuario);
-    if(listar().some(u=>u.id!==usuario.id&&u.email===novo.email))throw new ErroCadastro('E-mail já cadastrado.',409);
-    banco.db.prepare('UPDATE usuarios SET email=?,dados=? WHERE id=?').run(novo.email,JSON.stringify(novo),usuario.id);
-    banco.evento(usuario,'areaProfessor','Perfil atualizado',usuario.id);
+  function perfil(entrada: unknown, usuario: Usuario) {
+    const d = objeto(entrada);
+    const novo = validarUsuario(
+      { ...usuario, nome: d.nome, email: d.email, telefone: d.telefone },
+      usuario,
+    );
+    if (listar().some((u) => u.id !== usuario.id && u.email === novo.email))
+      throw new ErroCadastro('E-mail já cadastrado.', 409);
+    banco.db
+      .prepare('UPDATE usuarios SET email=?,dados=? WHERE id=?')
+      .run(novo.email, JSON.stringify(novo), usuario.id);
+    banco.evento(usuario, 'areaProfessor', 'Perfil atualizado', usuario.id);
     return novo;
   }
   return { perfil, instalado, configurar, entrar, sessao, sair, listar, criar, editar, recuperar };

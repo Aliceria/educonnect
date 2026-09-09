@@ -39,6 +39,16 @@ export default function Historico() {
           <select value={modulo} onChange={(e) => setModulo(e.target.value)}>
             <option value="">Todos</option>
             {[
+              'alunos',
+              'aulas',
+              'planejamentos',
+              'modelos',
+              'acompanhamentos',
+              'necessidades',
+              'pacotes',
+              'pagamentos',
+              'comunicacoes',
+              'solicitacoes',
               'professores',
               'disciplinas',
               'conteudos',

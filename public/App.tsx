@@ -20,14 +20,14 @@ import Seguranca, { Entrada } from './Seguranca';
 import Historico from './Historico';
 
 const modulos = [
-  {id:'alunos', nome:'Alunos', tela:Alunos},
-  {id:'agendamento', nome:'Agenda', tela:Agendamento},
-  {id:'planejamento', nome:'Planejamento', tela:Planejamento},
-  {id:'acompanhamento', nome:'Acompanhamento', tela:Acompanhamento},
-  {id:'pagamentos', nome:'Pagamentos', tela:Pagamentos},
-  {id:'comunicacao', nome:'Comunicação', tela:Comunicacao},
-  {id:'areaProfessor', nome:'Minha área', tela:AreaProfessor},
-  {id:'dashboard', nome:'Dashboard', tela:Dashboard},
+  { id: 'alunos', nome: 'Alunos', tela: Alunos },
+  { id: 'agendamento', nome: 'Agenda', tela: Agendamento },
+  { id: 'planejamento', nome: 'Planejamento', tela: Planejamento },
+  { id: 'acompanhamento', nome: 'Acompanhamento', tela: Acompanhamento },
+  { id: 'pagamentos', nome: 'Pagamentos', tela: Pagamentos },
+  { id: 'comunicacao', nome: 'Comunicação', tela: Comunicacao },
+  { id: 'areaProfessor', nome: 'Minha área', tela: AreaProfessor },
+  { id: 'dashboard', nome: 'Dashboard', tela: Dashboard },
   { id: 'professores', nome: 'Professores', tela: Professores },
   { id: 'disciplinas', nome: 'Disciplinas', tela: Disciplinas },
   { id: 'materiais', nome: 'Materiais', tela: Materiais },
@@ -107,12 +107,14 @@ export default function App() {
     (m) =>
       usuario &&
       (usuario.perfil === 'Administrador' ||
-        (!['configuracoes', 'seguranca'].includes(m.id) && usuario.permissoes.includes(m.id))),
+        (!['configuracoes', 'seguranca'].includes(m.id) &&
+          usuario.permissoes.includes(m.id) &&
+          (m.id !== 'pagamentos' || usuario.permissoes.includes('financeiro')))),
   );
   const grupos = [
- {nome:'Visão geral', ids:['dashboard','areaProfessor']},
- {nome:'Aulas', ids:['alunos','agendamento','planejamento','acompanhamento']},
- {nome:'Atendimento', ids:['pagamentos','comunicacao']},
+    { nome: 'Visão geral', ids: ['dashboard', 'areaProfessor'] },
+    { nome: 'Aulas', ids: ['alunos', 'agendamento', 'planejamento', 'acompanhamento'] },
+    { nome: 'Atendimento', ids: ['pagamentos', 'comunicacao'] },
     { nome: 'Gestão', ids: ['professores', 'disciplinas', 'materiais'] },
     { nome: 'Acompanhamento', ids: ['avaliacoes', 'presenca', 'relatorios'] },
     { nome: 'Sistema', ids: ['configuracoes', 'seguranca', 'historico'] },
@@ -131,7 +133,16 @@ export default function App() {
         <Entrada onEntrar={entrar} />
       </main>
     );
-  if (['Aluno','Responsável'].includes(usuario.perfil)) return <main className="acesso portal"><header className="cabecalho">{marca}<button onClick={()=>void sair()}>Sair</button></header><AreaProfessor/></main>;
+  if (['Aluno', 'Responsável'].includes(usuario.perfil))
+    return (
+      <main className="acesso portal">
+        <header className="cabecalho">
+          {marca}
+          <button onClick={() => void sair()}>Sair</button>
+        </header>
+        <AreaProfessor />
+      </main>
+    );
   return (
     <div className="aplicacao">
       <a className="pular" href="#conteudo">

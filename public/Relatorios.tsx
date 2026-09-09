@@ -28,9 +28,14 @@ export default function Relatorios() {
   const [erro, setErro] = useState('');
   const [ocupado, setOcupado] = useState(false);
   useEffect(() => {
-    api<{ alunos: Aluno[] }>('/referencias')
-      .then((r) => setAlunos(r.alunos))
-      .catch((e) => setErro(e.message));
+    const carregar = () => {
+      void api<{ alunos: Aluno[] }>('/referencias')
+        .then((r) => setAlunos(r.alunos))
+        .catch((e) => setErro(e.message));
+    };
+    carregar();
+    window.addEventListener('cadastro-atualizado', carregar);
+    return () => window.removeEventListener('cadastro-atualizado', carregar);
   }, []);
   async function gerar() {
     setOcupado(true);

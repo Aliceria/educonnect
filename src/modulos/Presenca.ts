@@ -23,6 +23,11 @@ export function validarPresenca(
   id?: string,
 ) {
   const aulaId = texto(d, 'aulaId');
+  if (id && banco.buscar('presencas', id, usuario).dados.aulaId !== aulaId)
+    throw new ErroCadastro(
+      'A presença não pode ser transferida para outra aula. Edite o registro da aula correta.',
+      409,
+    );
   const aulas = referencias(fontes, usuario).aulas;
   const aula = aulas.find((item) => item.id === aulaId);
   if (!aula) throw new ErroCadastro('Aula indisponível. O agendamento deve vir do módulo 2.');
