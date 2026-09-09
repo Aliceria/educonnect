@@ -132,11 +132,7 @@ educonnect/
 └── vite.config.ts
 ```
 
-O backend principal fica em `src/servidor.ts`, e a lógica dos módulos está em `src/modulos/`.
-
-## Fluxo do sistema
-
-Ao entrar no sistema, o usuário acessa a tela de autenticação. Se ainda não
+> Observação: a árvore acima mostra apenas os itens rastreados no repositório. Os diretórios ignorados pelo Git no arquivo [.gitignore, o usuário acessa a tela de autenticação. Se ainda não
 houver administrador, o sistema cria o primeiro acesso e gera um código de
 recuperação.
 
@@ -317,3 +313,11 @@ Principais pontos:
 
 Os arquivos ignorados pelo Git, como `dados/`, `node_modules/` e `dist/`, não
 devem ser enviados ao repositório.
+
+### O que ainda falta para ficar mais real
+
+- WhatsApp, e-mail e SMS para lembretes automáticos
+- integração real de pagamento
+- criptografia dos dados sensíveis em repouso
+- retenção e exclusão automática de dados antigos
+- deploy em servidor real e banco externo(?)
