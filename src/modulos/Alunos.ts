@@ -1,6 +1,7 @@
 import { texto, numero, escolha } from '../banco.ts';
 import type { Banco, Dados, Usuario } from '../banco.ts';
 import { ErroCadastro } from './Professores.ts';
+import { normalizarTelefone } from '../telefone.ts';
 
 // Campos do cadastro da Maria, adaptados para o banco compartilhado.
 export function validarAluno(d: Dados, banco: Banco, usuario: Usuario) {
@@ -11,8 +12,14 @@ export function validarAluno(d: Dados, banco: Banco, usuario: Usuario) {
   if (!Number.isInteger(idade)) throw new ErroCadastro('Informe uma idade inteira.');
   const responsavel = texto(d, 'responsavel', idade < 18);
   const contatoResponsavel = texto(d, 'contatoResponsavel', idade < 18);
+  let telefone: string;
+  try {
+    telefone = normalizarTelefone(texto(d, 'telefone', false));
+  } catch (erro) {
+    throw new ErroCadastro((erro as Error).message);
+  }
   return {
-    nome: texto(d, 'nome', true, 150), idade, telefone: texto(d, 'telefone', false),
+    nome: texto(d, 'nome', true, 150), idade, telefone,
     email: texto(d, 'email', false), professorId, responsavel, contatoResponsavel,
     emailResponsavel: texto(d, 'emailResponsavel', false), parentesco: texto(d, 'parentesco', idade < 18),
     autorizacao: texto(d, 'autorizacao', false), escola: texto(d, 'escola', false), serie: texto(d, 'serie', false),

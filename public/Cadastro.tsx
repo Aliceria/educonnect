@@ -2,11 +2,12 @@ import { useEffect, useState, useRef } from 'react';
 import type { ReactNode, FormEvent } from 'react';
 import { api } from './api';
 import type { Registro, Dados } from '../src/banco';
+import { avisoTelefone, normalizarTelefone } from '../src/telefone';
 
 export type Campo = {
   nome: string;
   rotulo: string;
-  tipo?: 'area' | 'numero' | 'data' | 'hora' | 'multiplo';
+  tipo?: 'area' | 'numero' | 'data' | 'hora' | 'multiplo' | 'telefone';
   opcoes?: string[];
   fonte?: string;
   depende?: string;
@@ -127,6 +128,8 @@ export default function Cadastro({
       const dados = { ...form };
       for (const campo of campos)
         if (campo.tipo === 'numero') dados[campo.nome] = Number(dados[campo.nome]);
+        else if (campo.tipo === 'telefone')
+          dados[campo.nome] = normalizarTelefone(String(dados[campo.nome] ?? ''));
       await api(
         `/registros/${tipo}${editando ? `/${editando.id}` : ''}`,
         editando ? 'PUT' : 'POST',
@@ -249,7 +252,7 @@ export default function Cadastro({
                               ? 'date'
                               : c.tipo === 'hora'
                                 ? 'time'
-                                : 'text'
+                                : c.tipo === 'telefone' ? 'tel' : 'text'
                         }
                         min={c.tipo === 'numero' ? (c.minimo ?? 0) : undefined}
                         max={c.maximo}
@@ -262,9 +265,20 @@ export default function Cadastro({
                         }
                         maxLength={2000}
                         value={valor}
-                        onChange={(e) => mudar(c, e.target.value)}
+                        onChange={(e) => {
+                          if (c.tipo === 'telefone') {
+                            try {
+                              normalizarTelefone(e.target.value);
+                              e.target.setCustomValidity('');
+                            } catch {
+                              e.target.setCustomValidity(avisoTelefone);
+                            }
+                          }
+                          mudar(c, e.target.value);
+                        }}
                       />
                     )}
+                    {c.tipo === 'telefone' && <small>{avisoTelefone}</small>}
                     {c.fonte && opcoes.length === 0 && (
                       <small>
                         Nenhuma opção disponível. Cadastre os dados primeiro ou conecte a fonte
