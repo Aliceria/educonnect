@@ -3,6 +3,7 @@ import type { ReactNode, FormEvent } from 'react';
 import { api } from './api';
 import type { Registro, Dados } from '../src/banco';
 import { avisoTelefone, normalizarTelefone } from '../src/telefone';
+import { avisoNome, normalizarNome } from '../src/nome';
 
 export type Campo = {
   nome: string;
@@ -16,6 +17,7 @@ export type Campo = {
   maximo?: number;
   passo?: number;
   inicial?: string | number;
+  nomePessoa?: boolean;
 };
 export type Referencia = {
   id: string;
@@ -126,6 +128,8 @@ export default function Cadastro({
     setMensagem('');
     try {
       const dados = { ...form };
+      for (const campo of campos)
+        if (campo.nomePessoa) dados[campo.nome] = normalizarNome(String(dados[campo.nome] ?? ''));
       for (const campo of campos)
         if (campo.tipo === 'numero') dados[campo.nome] = Number(dados[campo.nome]);
         else if (campo.tipo === 'telefone')
@@ -279,6 +283,7 @@ export default function Cadastro({
                       />
                     )}
                     {c.tipo === 'telefone' && <small>{avisoTelefone}</small>}
+                    {c.nomePessoa && <small>{avisoNome}</small>}
                     {c.fonte && opcoes.length === 0 && (
                       <small>
                         Nenhuma opção disponível. Cadastre os dados primeiro ou conecte a fonte
