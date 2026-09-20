@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
+import { normalizarTelefone } from '../telefone.ts';
 
 export type Horario = { dia: number; inicio: string; fim: string };
 
@@ -52,7 +53,12 @@ export function validarProfessor(valor: unknown): CadastroProfessor {
     return conteudo;
   }
   const nome = texto('nome', 'o nome', true, 150);
-  const contato = texto('contato', 'o contato', true, 100);
+  let contato: string;
+  try {
+    contato = normalizarTelefone(texto('contato', 'o contato', true, 100));
+  } catch (erro) {
+    throw new ErroCadastro((erro as Error).message);
+  }
   const email = texto('email', 'o e-mail', true, 254).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     throw new ErroCadastro('Informe um e-mail válido.');

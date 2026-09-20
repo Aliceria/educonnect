@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { CadastroProfessor, Horario, Professor } from '../src/modulos/Professores';
 import { api } from './api';
+import { avisoTelefone, normalizarTelefone } from '../src/telefone';
 
 const dias = [
   'Domingo',
@@ -126,6 +127,7 @@ export default function Professores({ administrador = true }: { administrador?: 
       ...(original ? { versao: original.versao } : {}),
     };
     try {
+      dados.contato = normalizarTelefone(formulario.contato);
       const professor = await api<Professor>(
         original ? `/professores/${original.id}` : '/professores',
         original ? 'PUT' : 'POST',
@@ -219,8 +221,17 @@ export default function Professores({ administrador = true }: { administrador?: 
                   required
                   maxLength={100}
                   value={formulario.contato}
-                  onChange={(e) => campo('contato', e.target.value)}
+                  onChange={(e) => {
+                    try {
+                      normalizarTelefone(e.target.value);
+                      e.target.setCustomValidity('');
+                    } catch {
+                      e.target.setCustomValidity(avisoTelefone);
+                    }
+                    campo('contato', e.target.value);
+                  }}
                 />
+                <small>{avisoTelefone}</small>
               </label>
               <label>
                 E-mail *
