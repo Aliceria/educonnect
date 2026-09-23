@@ -3,6 +3,7 @@ import type { Banco, Dados, Usuario } from '../banco.ts';
 import { ErroCadastro } from './Professores.ts';
 import { normalizarTelefone } from '../telefone.ts';
 import { normalizarNome } from '../nome.ts';
+import { validarSerie } from '../serie.ts';
 
 // Campos do cadastro da Maria, adaptados para o banco compartilhado.
 export function validarAluno(d: Dados, banco: Banco, usuario: Usuario) {
@@ -15,7 +16,9 @@ export function validarAluno(d: Dados, banco: Banco, usuario: Usuario) {
   const contatoResponsavel = texto(d, 'contatoResponsavel', idade < 18);
   let telefone: string;
   let nome: string;
+  let serie: string;
   try {
+    serie = validarSerie(texto(d, 'serie', false));
     nome = normalizarNome(texto(d, 'nome', true, 150));
     telefone = normalizarTelefone(texto(d, 'telefone', false));
   } catch (erro) {
@@ -25,7 +28,7 @@ export function validarAluno(d: Dados, banco: Banco, usuario: Usuario) {
     nome, idade, telefone,
     email: texto(d, 'email', false), professorId, responsavel, contatoResponsavel,
     emailResponsavel: texto(d, 'emailResponsavel', false), parentesco: texto(d, 'parentesco', idade < 18),
-    autorizacao: texto(d, 'autorizacao', false), escola: texto(d, 'escola', false), serie: texto(d, 'serie', false),
+    autorizacao: texto(d, 'autorizacao', false), escola: texto(d, 'escola', false), serie,
     disciplina: texto(d, 'disciplina'), dificuldade: texto(d, 'dificuldade', false),
     objetivo: texto(d, 'objetivo'), modalidade: escolha(d, 'modalidade', ['Presencial', 'On-line', 'Híbrida']),
     endereco: texto(d, 'endereco', false), disponibilidade: texto(d, 'disponibilidade', false),
