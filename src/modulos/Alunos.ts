@@ -12,12 +12,13 @@ export function validarAluno(d: Dados, banco: Banco, usuario: Usuario) {
   if (!professor || !JSON.parse(String(professor.cadastro)).ativo) throw new ErroCadastro('Selecione um professor ativo.');
   const idade = numero(d, 'idade', 1, 120);
   if (!Number.isInteger(idade)) throw new ErroCadastro('Informe uma idade inteira.');
-  const responsavel = texto(d, 'responsavel', idade < 18);
+  let responsavel = texto(d, 'responsavel', idade < 18, 150);
   const contatoResponsavel = texto(d, 'contatoResponsavel', idade < 18);
   let telefone: string;
   let nome: string;
   let serie: string;
   try {
+    if (responsavel) responsavel = normalizarNome(responsavel);
     serie = validarSerie(texto(d, 'serie', false));
     nome = normalizarNome(texto(d, 'nome', true, 150));
     telefone = normalizarTelefone(texto(d, 'telefone', false));

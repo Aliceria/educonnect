@@ -129,7 +129,10 @@ export default function Cadastro({
     try {
       const dados = { ...form };
       for (const campo of campos)
-        if (campo.nomePessoa) dados[campo.nome] = normalizarNome(String(dados[campo.nome] ?? ''));
+        if (campo.nomePessoa) {
+          const valor = String(dados[campo.nome] ?? '');
+          dados[campo.nome] = campo.opcional && !valor.trim() ? '' : normalizarNome(valor);
+        }
       for (const campo of campos)
         if (campo.tipo === 'numero') dados[campo.nome] = Number(dados[campo.nome]);
         else if (campo.tipo === 'telefone')
