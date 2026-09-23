@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 import { normalizarTelefone } from '../telefone.ts';
+import { normalizarNome } from '../nome.ts';
 
 export type Horario = { dia: number; inicio: string; fim: string };
 
@@ -52,9 +53,10 @@ export function validarProfessor(valor: unknown): CadastroProfessor {
       throw new ErroCadastro(`${rotulo}: máximo de ${limite} caracteres.`);
     return conteudo;
   }
-  const nome = texto('nome', 'o nome', true, 150);
+  let nome: string;
   let contato: string;
   try {
+    nome = normalizarNome(texto('nome', 'o nome', true, 150));
     contato = normalizarTelefone(texto('contato', 'o contato', true, 100));
   } catch (erro) {
     throw new ErroCadastro((erro as Error).message);

@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import type { CadastroProfessor, Horario, Professor } from '../src/modulos/Professores';
 import { api } from './api';
 import { avisoTelefone, normalizarTelefone } from '../src/telefone';
+import { avisoNome, normalizarNome } from '../src/nome';
 
 const dias = [
   'Domingo',
@@ -128,6 +129,7 @@ export default function Professores({ administrador = true }: { administrador?: 
     };
     try {
       dados.contato = normalizarTelefone(formulario.contato);
+      dados.nome = normalizarNome(formulario.nome);
       const professor = await api<Professor>(
         original ? `/professores/${original.id}` : '/professores',
         original ? 'PUT' : 'POST',
@@ -213,6 +215,7 @@ export default function Professores({ administrador = true }: { administrador?: 
                   value={formulario.nome}
                   onChange={(e) => campo('nome', e.target.value)}
                 />
+                <small>{avisoNome}</small>
               </label>
               <label>
                 Contato *
