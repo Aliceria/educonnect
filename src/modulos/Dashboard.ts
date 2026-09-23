@@ -2,16 +2,25 @@ import type { Banco, Usuario } from '../banco.ts';
 import type { Fontes } from '../integracao.ts';
 import { referencias } from '../integracao.ts';
 import { lerConfiguracoes } from './Configuracoes.ts';
-export function resumoDashboard(banco: Banco, usuario: Usuario, fontes: Fontes) {
+import { calcularFrequencia } from './Presenca.ts';
+export function resumoDashboard(banco: Banco, usuario: Usuario, fontes: Fontes, instante = new Date()) {
   const ref = referencias(fontes, usuario);
-  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  const hoje = instante.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
   const mes = hoje.slice(0, 7);
+  const inicio = new Date(`${hoje}T12:00:00Z`);
+  inicio.setUTCDate(inicio.getUTCDate() - (inicio.getUTCDay() + 6) % 7);
+  const fim = new Date(inicio);
+  fim.setUTCDate(fim.getUTCDate() + 6);
+  const semana = { inicio: inicio.toISOString().slice(0, 10), fim: fim.toISOString().slice(0, 10) };
+  const frequencia = calcularFrequencia(banco.listar('presencas', usuario)
+    .map(r => r.dados)
+    .filter(r => String(r.data).startsWith(mes) && String(r.data) <= hoje));
   const planejadas = new Set(banco.listar('planejamentos', usuario).map((p) => p.dados.aulaId));
   const realizadas = ref.aulas.filter(
     (a) =>
       ['Presente', 'Realizada', 'Reposição realizada'].includes(a.status) && a.data.startsWith(mes),
   );
-  const agora = new Date()
+  const agora = instante
     .toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' })
     .replace(' ', 'T')
     .slice(0, 16);
@@ -23,10 +32,13 @@ export function resumoDashboard(banco: Banco, usuario: Usuario, fontes: Fontes) 
   const minutos = lerConfiguracoes(banco).lembretesMinutos;
   const lembretes = proximas.filter((a) => {
     const quando = Date.parse(`${a.data}:00-03:00`);
-    return quando >= Date.now() && quando - Date.now() <= minutos * 60000;
+    return quando >= instante.getTime() && quando - instante.getTime() <= minutos * 60000;
   });
   return {
     hoje,
+    semana,
+    frequencia: { ...frequencia, mes },
+    aulasSemana: ref.aulas.filter(a => a.data.slice(0, 10) >= semana.inicio && a.data.slice(0, 10) <= semana.fim),
     alunos: ref.alunos.filter((a) => a.status !== 'Inativo'),
     aulasHoje: ref.aulas.filter((a) => a.data.startsWith(hoje)),
     proximas: proximas.slice(0, 10),
