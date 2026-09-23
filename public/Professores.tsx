@@ -4,6 +4,7 @@ import type { CadastroProfessor, Horario, Professor } from '../src/modulos/Profe
 import { api } from './api';
 import { avisoTelefone, normalizarTelefone } from '../src/telefone';
 import { avisoNome, normalizarNome } from '../src/nome';
+import { avisoDisciplina, normalizarDisciplina } from '../src/disciplina';
 
 const dias = [
   'Domingo',
@@ -130,6 +131,7 @@ export default function Professores({ administrador = true }: { administrador?: 
     try {
       dados.contato = normalizarTelefone(formulario.contato);
       dados.nome = normalizarNome(formulario.nome);
+      dados.disciplinas = dados.disciplinas.map(normalizarDisciplina);
       const professor = await api<Professor>(
         original ? `/professores/${original.id}` : '/professores',
         original ? 'PUT' : 'POST',
@@ -268,6 +270,7 @@ export default function Professores({ administrador = true }: { administrador?: 
                   onChange={(e) => campo('disciplinas', e.target.value)}
                 />
                 <small>Separe os nomes por vírgula.</small>
+                <small>{avisoDisciplina}</small>
               </label>
               <label>
                 Modalidade

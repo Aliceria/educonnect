@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 import { normalizarTelefone } from '../telefone.ts';
 import { normalizarNome } from '../nome.ts';
+import { normalizarDisciplina } from '../disciplina.ts';
 
 export type Horario = { dia: number; inicio: string; fim: string };
 
@@ -77,7 +78,11 @@ export function validarProfessor(valor: unknown): CadastroProfessor {
       if (typeof disciplina !== 'string' || !disciplina.trim() || disciplina.trim().length > 100) {
         throw new ErroCadastro('Cada disciplina precisa ter de 1 a 100 caracteres.');
       }
-      return disciplina.trim();
+      try {
+        return normalizarDisciplina(disciplina);
+      } catch (erro) {
+        throw new ErroCadastro((erro as Error).message);
+      }
     })
     .filter(
       (disciplina, indice, lista) =>
