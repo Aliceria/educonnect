@@ -29,6 +29,8 @@ export function resumoDashboard(banco: Banco, usuario: Usuario, fontes: Fontes, 
     .sort((a, b) => a.data.localeCompare(b.data));
   const financeiro =
     usuario.perfil === 'Administrador' || usuario.permissoes.includes('financeiro');
+  const somarPagamentos = (filtro: (p: (typeof ref.pagamentos)[number]) => boolean) =>
+    ref.pagamentos.filter(filtro).reduce((s, p) => s + Math.round(p.valor * 100), 0) / 100;
   const minutos = lerConfiguracoes(banco).lembretesMinutos;
   const lembretes = proximas.filter((a) => {
     const quando = Date.parse(`${a.data}:00-03:00`);
@@ -52,12 +54,10 @@ export function resumoDashboard(banco: Banco, usuario: Usuario, fontes: Fontes, 
     lembretes,
     financeiro: financeiro
       ? {
-          recebido: ref.pagamentos
-            .filter((p) => p.status === 'Recebido' && p.recebidoEm?.startsWith(mes))
-            .reduce((s, p) => s + p.valor, 0),
-          pendente: ref.pagamentos
-            .filter((p) => p.status !== 'Recebido')
-            .reduce((s, p) => s + p.valor, 0),
+          recebido: somarPagamentos(p => p.status === 'Recebido' &&
+            !!p.recebidoEm?.startsWith(mes) && p.recebidoEm <= hoje),
+          pendente: somarPagamentos(p => p.status !== 'Recebido' && p.vencimento >= hoje),
+          atrasado: somarPagamentos(p => p.status !== 'Recebido' && p.vencimento < hoje),
         }
       : null,
   };
