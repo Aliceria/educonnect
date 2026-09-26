@@ -21,7 +21,10 @@ relatórios em um único ambiente.
 
 - cadastro e gestão de alunos
 - cadastro de professores e disciplinas
-- agenda e agendamento de aulas
+- agenda por dia, semana ou mês, com navegação entre datas
+- cadastro de aulas com modalidade, disciplina e observações
+- identificação dos status das aulas por cores
+- exclusão de aulas com confirmação
 - aulas recorrentes e reagendamento
 - planejamento de aulas e modelos reutilizáveis
 - acompanhamento pedagógico, avaliações e presença
@@ -35,6 +38,8 @@ relatórios em um único ambiente.
 - área do professor e área do aluno/responsável
 
 ## Como rodar
+
+É necessário ter Node.js 24 ou superior instalado.
 
 Instale as dependências:
 
@@ -74,11 +79,22 @@ Para verificar os tipos e compilar o frontend:
 npm run build
 ```
 
+Para executar os testes:
+
+```bash
+npm test
+```
+
 ## Estrutura do projeto
 
 ```text
 educonnect/
 ├── public/
+│   ├── agenda/
+│   │   ├── AgendaPeriodo.tsx
+│   │   ├── auxiliares.ts
+│   │   ├── campos.ts
+│   │   └── datas.ts
 │   ├── api.ts
 │   ├── App.tsx
 │   ├── Agendamento.tsx
@@ -121,6 +137,7 @@ educonnect/
 │   │   ├── Professores.ts
 │   │   ├── Relatorios.ts
 │   │   └── Seguranca.ts
+│   ├── agendamento.test.ts
 │   ├── banco.ts
 │   ├── integracao.ts
 │   └── servidor.ts
@@ -132,8 +149,12 @@ educonnect/
 └── vite.config.ts
 ```
 
-> Observação: a árvore acima mostra apenas os itens rastreados no repositório. Os diretórios ignorados pelo Git no arquivo [.gitignore, o usuário acessa a tela de autenticação. Se ainda não
-houver administrador, o sistema cria o primeiro acesso e gera um código de
+> Observação: diretórios como `dados/`, `node_modules/` e `dist/` são ignorados pelo Git e não aparecem na estrutura acima.
+
+## Fluxo do sistema
+
+Ao abrir o sistema, o usuário acessa a tela de autenticação. Se ainda não
+houver administrador, o primeiro acesso permite cadastrá-lo e gera um código de
 recuperação.
 
 O fluxo principal é:
@@ -167,10 +188,15 @@ O fluxo principal é:
 | `GET` | `/api/registros/aulas` | lista aulas |
 | `POST` | `/api/registros/aulas` | cadastra aula |
 | `PUT` | `/api/registros/aulas/:id` | edita aula |
+| `DELETE` | `/api/registros/aulas/:id` | exclui aula |
 | `POST` | `/api/aulas/:id/reagendar` | reagenda aula |
 | `POST` | `/api/aulas/:id/repetir` | repete aula |
 | `GET` | `/api/dashboard` | retorna dados do dashboard |
 | `GET` | `/api/referencias` | retorna referências para formulários |
+
+A exclusão de uma aula remove sua presença e atualiza o saldo do pacote.
+Aulas com planejamento, materiais, acompanhamento ou outras aulas vinculadas
+não podem ser excluídas enquanto esses vínculos existirem.
 
 ### Acompanhamento, materiais e relatórios
 
@@ -200,7 +226,8 @@ O fluxo principal é:
 
 ## Banco de dados
 
-O projeto usa SQLite como banco local.
+O projeto usa SQLite como banco local. Alunos, aulas, pagamentos e outros
+cadastros são armazenados em JSON na tabela `registros`.
 
 Principais entidades:
 
@@ -211,6 +238,8 @@ Principais entidades:
 - `pacotes`, `pagamentos`, `solicitacoes`, `historico` e `ajustes`
 
 ## Diagrama Entidade Relacionamento
+
+O diagrama representa as entidades e seus vínculos, não a estrutura física das tabelas.
 
 ### Visão textual
 
