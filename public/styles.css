@@ -606,3 +606,18 @@ summary {
   .dashboard-total { font-size: 22px; }
   .dashboard-grafico text { font-size: 24px; }
 }
+.agenda-legenda { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.agenda-lista { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; }
+.agenda-aula { border: 1px solid var(--borda); border-left: 5px solid var(--status-cor); border-radius: 8px; padding: 18px; background: white; min-width: 0; overflow-wrap: anywhere; }
+.agenda-aula h4 { margin: 0 0 10px; font-size: 16px; }
+.agenda-aula dt { font-weight: bold; margin-top: 12px; }
+.agenda-aula dd { margin: 4px 0; white-space: pre-wrap; }
+.agenda-status { display: inline-block; border: 1px solid var(--status-cor); border-radius: 16px; padding: 4px 10px; color: var(--status-cor); background: white; font-weight: bold; font-size: 12px; }
+.agendada { --status-cor: #245b99; }
+.realizada { --status-cor: #27663c; }
+.falta { --status-cor: #a02424; }
+.justificada { --status-cor: #825600; }
+.professor { --status-cor: #993e16; }
+.cancelada { --status-cor: #555c66; }
+.reagendada { --status-cor: #713e9e; }
+.reposicao { --status-cor: #086c70; }

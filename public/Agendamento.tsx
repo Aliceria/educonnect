@@ -1,50 +1,19 @@
+import { camposAgenda } from './agenda/campos';
 import { useState } from 'react';
-import Cadastro, { type Referencia } from './Cadastro';
+import Cadastro from './Cadastro';
 import type { Registro } from '../src/banco';
 import { api } from './api';
-function horarioFinal(hora: string, duracao: unknown) {
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) return '';
-  const minutos = Number(duracao);
-  if (!Number.isInteger(minutos) || minutos < 15 || minutos > 480) return '';
-  const total = Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3)) + minutos;
-  if (total > 1440) return 'A duração ultrapassa o fim do dia. Ajuste o início ou a duração.';
-  return (
-    'Término previsto: ' +
-    String(Math.floor(total / 60) % 24).padStart(2, '0') +
-    ':' +
-    String(total % 60).padStart(2, '0') +
-    (total === 1440 ? ' (meia-noite)' : '')
-  );
-}
-function horarioForaDisponibilidade(dados: Record<string, unknown>, referencias: Record<string, Referencia[]>) {
-  if (!dados.data || !dados.hora || !dados.alunoId || typeof dados.duracaoMinutos !== 'number') return false;
-  const aluno = referencias.alunos?.find((item) => item.id === String(dados.alunoId));
-  const professorId = aluno?.professorId;
-  const professor = referencias.professores?.find((item) => item.id === professorId);
-  const horarios = professor?.horarios ?? [];
-  if (!horarios.length) return false;
-
-  const data = new Date(`${String(dados.data)}T12:00:00`);
-  const diaSemana = data.getDay();
-  const inicio = Number(String(dados.hora).slice(0, 2)) * 60 + Number(String(dados.hora).slice(3));
-  const fim = inicio + Number(dados.duracaoMinutos);
-
-  return !horarios.some((horario) => {
-    const inicioProfessor = Number(horario.inicio.slice(0, 2)) * 60 + Number(horario.inicio.slice(3));
-    const fimProfessor = Number(horario.fim.slice(0, 2)) * 60 + Number(horario.fim.slice(3));
-    return horario.dia === diaSemana && inicio >= inicioProfessor && fim <= fimProfessor;
-  });
-}
-
+import { horarioFinal, horarioForaDisponibilidade } from './agenda/auxiliares';
+import AgendaPeriodo from './agenda/AgendaPeriodo';
 export default function Agendamento() {
-  const [periodo, setPeriodo] = useState('Semana');
-  const [dia, setDia] = useState(new Date().toLocaleDateString('en-CA'));
   const [repeticao, setRepeticao] = useState<Registro | null>(null);
   const [quantidade, setQuantidade] = useState(4);
   const [aula, setAula] = useState<Registro | null>(null);
   const [data, setData] = useState('');
   const [hora, setHora] = useState('');
   const [erro, setErro] = useState('');
+  const [excluindo, setExcluindo] = useState<Registro | null>(null);
+  const [ocupado, setOcupado] = useState(false);
   async function reagendar() {
     if (!aula) return;
     try {
@@ -65,64 +34,7 @@ export default function Agendamento() {
       <Cadastro
         titulo="Aulas"
         tipo="aulas"
-        campos={[
-          { nome: 'alunoId', rotulo: 'Aluno', fonte: 'alunos' },
-          { nome: 'data', rotulo: 'Data', tipo: 'data' },
-          { nome: 'hora', rotulo: 'Horário de início', tipo: 'hora' },
-          {
-            nome: 'duracaoMinutos',
-            rotulo: 'Duração (minutos)',
-            tipo: 'numero',
-            minimo: 15,
-            maximo: 480,
-            passo: 1,
-            inicial: 60,
-          },
-          {
-            nome: 'status',
-            rotulo: 'Situação',
-            opcoes: [
-              'Agendada',
-              'Realizada',
-              'Falta',
-              'Falta justificada',
-              'Falta do professor',
-              'Cancelada pelo aluno',
-              'Cancelada pelo professor',
-              'Reagendada',
-              'Reposição realizada',
-            ],
-          },
-          {
-            nome: 'justificativa',
-            rotulo: 'Justificativa da falta',
-            tipo: 'area',
-            opcional: true,
-          },
-          {
-            nome: 'pacoteId',
-            rotulo: 'Pacote (opcional)',
-            fonte: 'pacotes',
-            opcional: true,
-          },
-          {
-            nome: 'originalId',
-            rotulo: 'Aula original da reposição',
-            fonte: 'aulas',
-            opcional: true,
-          },
-          {
-            nome: 'link',
-            rotulo: 'Link da videochamada (opcional)',
-            opcional: true,
-          },
-          {
-            nome: 'conteudos',
-            rotulo: 'Conteúdo da aula',
-            tipo: 'area',
-            opcional: true,
-          },
-        ]}
+        campos={camposAgenda}
         complementoFormulario={(dados, referencias) => (
           <>
             <p role="status">{horarioFinal(String(dados.hora ?? ''), dados.duracaoMinutos)}</p>
@@ -133,65 +45,10 @@ export default function Agendamento() {
             )}
           </>
         )}
-        rodape={(aulas, refs) => {
-          const inicio = new Date(dia + 'T12:00:00');
-          const fim = new Date(inicio);
-          if (periodo === 'Semana') {
-            inicio.setDate(inicio.getDate() - inicio.getDay());
-            fim.setTime(inicio.getTime());
-            fim.setDate(fim.getDate() + 6);
-          }
-          if (periodo === 'Mês') {
-            inicio.setDate(1);
-            fim.setMonth(fim.getMonth() + 1, 0);
-          }
-          const lista = aulas
-            .filter((a) => {
-              const data = new Date(String(a.dados.data) + 'T12:00:00');
-              return data >= inicio && data <= fim;
-            })
-            .sort((a, b) =>
-              (String(a.dados.data) + a.dados.hora).localeCompare(
-                String(b.dados.data) + b.dados.hora,
-              ),
-            );
-          return (
-            <section className="cadastro">
-              <h3>Agenda por período</h3>
-              <div className="filtros">
-                <label>
-                  Visualização
-                  <select value={periodo} onChange={(e) => setPeriodo(e.target.value)}>
-                    <option>Dia</option>
-                    <option>Semana</option>
-                    <option>Mês</option>
-                  </select>
-                </label>
-                <label>
-                  Data de referência
-                  <input
-                    type="date"
-                    required
-                    value={dia}
-                    onChange={(e) => {
-                      if (e.target.value) setDia(e.target.value);
-                    }}
-                  />
-                </label>
-              </div>
-              {lista.map((a) => (
-                <p key={a.id}>
-                  {String(a.dados.data)} às {String(a.dados.hora)} —{' '}
-                  {refs.alunos?.find((s) => s.id === a.dados.alunoId)?.nome} —{' '}
-                  {String(a.dados.status)}
-                </p>
-              ))}
-              {!lista.length && <p>Nenhuma aula neste período.</p>}
-            </section>
-          );
-        }}
-        acoes={(r) =>
-          r.dados.status === 'Agendada' && (
+        rodape={(aulas, refs) => <AgendaPeriodo aulas={aulas} referencias={refs} />}
+        acoes={(r) => <>
+          <button onClick={() => { setExcluindo(r); setErro(''); }}>Excluir aula</button>
+          {r.dados.status === 'Agendada' && (
             <>
               <button
                 onClick={() => {
@@ -212,9 +69,25 @@ export default function Agendamento() {
                 Reagendar
               </button>
             </>
-          )
+          )}</>
         }
       />
+      {excluindo && <section className="cadastro" aria-label="Confirmar exclusão">
+        <h3>Excluir aula</h3>
+        <p>Excluir {String(excluindo.dados.nome)}? A frequência associada será removida e o saldo do pacote será recalculado. O histórico será mantido.</p>
+        <p>Aulas com planejamento, materiais, acompanhamento ou outras aulas vinculadas precisam ter esses vínculos resolvidos primeiro.</p>
+        {erro && <p role="alert">{erro}</p>}
+        <button disabled={ocupado} onClick={async () => {
+          setOcupado(true); setErro('');
+          try {
+            await api('/registros/aulas/' + excluindo.id, 'DELETE', { versao: excluindo.versao });
+            setExcluindo(null);
+            window.dispatchEvent(new Event('cadastro-atualizado'));
+          } catch (e) { setErro((e as Error).message); }
+          finally { setOcupado(false); }
+        }}>{ocupado ? 'Excluindo...' : 'Confirmar exclusão'}</button>{' '}
+        <button disabled={ocupado} onClick={() => setExcluindo(null)}>Manter aula</button>
+      </section>}
       {repeticao && (
         <section className="cadastro">
           <h3>Repetir aula semanalmente</h3>

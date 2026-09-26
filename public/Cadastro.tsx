@@ -169,6 +169,7 @@ export default function Cadastro({
           return ref ? rotulo(ref) : 'Indisponível';
         })
         .join(', ');
+    if (c.tipo === 'data' && /^\d{4}-\d{2}-\d{2}$/.test(String(valor))) return String(valor).split('-').reverse().join('/');
     return String(valor ?? '');
   }
   const normalizar = (v: string) =>

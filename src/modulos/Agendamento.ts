@@ -25,7 +25,8 @@ export function validarAula(d: Dados, banco: Banco, usuario: Usuario, id?: strin
   const inicio = Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3));
   if (!Number.isInteger(duracaoMinutos) || inicio + duracaoMinutos > 1440)
     throw new ErroCadastro('Confira a duração da aula.');
-  const status = escolha(d, 'status', estadosAula);
+  const statusInformado = escolha(d, 'status', [...estadosAula, 'Reposição']);
+  const status = statusInformado === 'Reposição' ? 'Agendada' : statusInformado;
   const justificativa = texto(
     { ...d, justificativa: d.justificativa ?? '' },
     'justificativa',
@@ -117,7 +118,7 @@ export function validarAula(d: Dados, banco: Banco, usuario: Usuario, id?: strin
     )
       throw new ErroCadastro('Já existe reposição para essa aula.', 409);
   }
-  if (status === 'Reposição realizada' && !originalId)
+  if ((status === 'Reposição realizada' || statusInformado === 'Reposição') && !originalId)
     throw new ErroCadastro('Informe a aula original.');
   const pacoteId = texto(d, 'pacoteId', false);
   if (originalId && banco.buscar('aulas', originalId, usuario).dados.pacoteId !== pacoteId)
@@ -135,6 +136,9 @@ export function validarAula(d: Dados, banco: Banco, usuario: Usuario, id?: strin
     }
   }
   return {
+    modalidade: escolha({ ...d, modalidade: d.modalidade ?? (aluno.dados.modalidade === 'On-line' ? 'On-line' : 'Presencial') }, 'modalidade', ['Presencial', 'On-line']),
+    disciplina: texto({ ...d, disciplina: d.disciplina || aluno.dados.disciplina || '' }, 'disciplina'),
+    observacoes: texto({ ...d, observacoes: d.observacoes ?? '' }, 'observacoes', false),
     justificativa,
     nome: `${dia} ${hora} — ${aluno.dados.nome}`,
     alunoId,
@@ -191,4 +195,22 @@ export function repetirAula(banco: Banco, usuario: Usuario, id: string, d: Dados
     );
   }
   return novas;
+}
+
+// A rota executa esta operação em uma transação, incluindo a auditoria.
+export function excluirAula(banco: Banco, usuario: Usuario, id: string, versao: unknown) {
+  const aula = banco.buscar('aulas', id, usuario);
+  if (aula.versao !== versao)
+    throw new ErroCadastro('A aula foi alterada. Atualize a lista antes de excluir.', 409);
+  const vinculo = banco.db.prepare("SELECT id FROM registros WHERE id<>? AND tipo<>'presencas' AND (json_extract(dados,'$.aulaId')=? OR json_extract(dados,'$.originalId')=?) LIMIT 1").get(id, id, id);
+  if (vinculo)
+    throw new ErroCadastro('A aula possui registros vinculados. Remova ou ajuste os vínculos antes de excluir.', 409);
+  const presencas = banco.db.prepare("SELECT id FROM registros WHERE tipo='presencas' AND json_extract(dados,'$.aulaId')=?").all(id);
+  for (const p of presencas) {
+    banco.db.prepare('DELETE FROM registros WHERE id=?').run(String(p.id));
+    banco.evento(usuario, 'presencas', 'Exclusão junto com a aula', String(p.id), { aulaId: id });
+  }
+  banco.db.prepare('DELETE FROM registros WHERE id=?').run(id);
+  banco.evento(usuario, 'aulas', 'Exclusão', id, { antes: aula.dados });
+  return { excluido: true };
 }

@@ -16,7 +16,7 @@ import { gerarRelatorio, gerarPdf } from './modulos/Relatorios.ts';
 import { lerConfiguracoes, salvarConfiguracoes, backups } from './modulos/Configuracoes.ts';
 import { consultarHistorico } from './modulos/Historico.ts';
 import { validarAluno, historicoAluno } from './modulos/Alunos.ts';
-import { validarAula, reagendar, repetirAula } from './modulos/Agendamento.ts';
+import { validarAula, reagendar, repetirAula, excluirAula } from './modulos/Agendamento.ts';
 import { validarPlanejamento, validarModelo } from './modulos/Planejamento.ts';
 import { validarAcompanhamento, validarNecessidade } from './modulos/Acompanhamento.ts';
 import {
@@ -423,7 +423,12 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
           );
         if (!consultaRelacionada) permitir(usuario, rota.modulo);
         if (['pagamentos', 'pacotes'].includes(tipo)) permitir(usuario, 'financeiro');
+        if (tipo === 'aulas' && id && metodo === 'DELETE') {
+          responder(200, transacao(() => excluirAula(banco, usuario, id, corpo.versao)));
+          return;
+        }
         if (metodo === 'GET') {
+          if (id) banco.buscar(tipo, id, usuario);
           const resultados = banco.listar(tipo, usuario).map((r) =>
             tipo === 'pagamentos'
               ? { ...r, dados: { ...r.dados, status: situacaoPagamento(r.dados) } }
