@@ -28,6 +28,7 @@ import {
 import { validarComunicacao, prepararEnvio } from './modulos/Comunicacao.ts';
 import { resumoDashboard } from './modulos/Dashboard.ts';
 import { meusDados, solicitarPrivacidade, responderPrivacidade } from './modulos/AreaProfessor.ts';
+import { listarNotificacoes, marcarNotificacoes } from './modulos/Notificacoes.ts';
 
 export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pastaBackup?: string) {
   const banco = abrirBanco(caminhoBanco);
@@ -178,6 +179,19 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
         return;
       }
       const usuario = acesso.sessao(cookie, lerConfiguracoes(banco).sessaoMinutos);
+      if (caminho === '/api/notificacoes' && metodo === 'GET') {
+        responder(200, transacao(() => listarNotificacoes(banco, usuario)));
+        return;
+      }
+      if (caminho === '/api/notificacoes/lidas' && metodo === 'PUT') {
+        responder(200, transacao(() => marcarNotificacoes(banco, usuario)));
+        return;
+      }
+      const notificacao = /^\/api\/notificacoes\/([a-f0-9]{64})\/lida$/.exec(caminho);
+      if (notificacao && metodo === 'PUT') {
+        responder(200, transacao(() => marcarNotificacoes(banco, usuario, notificacao[1])));
+        return;
+      }
       if (caminho === '/api/auth/eu' && metodo === 'GET') {
         responder(200, { ...usuario, sessaoMinutos: lerConfiguracoes(banco).sessaoMinutos });
         return;

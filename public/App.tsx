@@ -18,6 +18,7 @@ import Relatorios from './Relatorios';
 import Configuracoes from './Configuracoes';
 import Seguranca, { Entrada } from './Seguranca';
 import Historico from './Historico';
+import Notificacoes from './Notificacoes';
 
 const modulos = [
   { id: 'alunos', nome: 'Alunos', tela: Alunos },
@@ -138,6 +139,7 @@ export default function App() {
       <main className="acesso portal">
         <header className="cabecalho">
           {marca}
+          <Notificacoes key={usuario.id} />
           <button onClick={() => void sair()}>Sair</button>
         </header>
         <AreaProfessor />
@@ -196,6 +198,7 @@ export default function App() {
       <div className="area-principal">
         <header className="topo">
           <span>{modulos.find((m) => m.id === selecionado)?.nome ?? 'EduConnect'}</span>
+          <Notificacoes key={usuario.id} />
           <time dateTime={new Date().toISOString().slice(0, 10)}>
             {new Date().toLocaleDateString('pt-BR', {
               day: 'numeric',

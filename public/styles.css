@@ -621,3 +621,33 @@ summary {
 .cancelada { --status-cor: #555c66; }
 .reagendada { --status-cor: #713e9e; }
 .reposicao { --status-cor: #086c70; }
+.notificacoes { position: relative; }
+.notificacoes-botao { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.notificacoes-contador { border-radius: 20px; min-width: 24px; padding: 3px 7px; background: #205e58; color: #fff; font-size: 12px; text-align: center; }
+.notificacoes-painel { position: fixed; z-index: 50; top: 76px; right: 24px; width: min(540px, calc(100vw - 32px)); max-height: calc(100dvh - 100px); overflow-y: auto; background: white; border: 1px solid var(--borda); border-radius: 10px; box-shadow: 0 8px 30px #23373026; padding: 20px; color: #293b37; text-align: left; }
+.notificacoes-cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.notificacoes-cabecalho h2 { margin: 0; }
+.notificacoes-acoes { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.notificacoes-acoes label { display: grid; gap: 5px; }
+.notificacoes-acoes select { min-width: 120px; padding: 8px; }
+.notificacoes-lista { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.notificacao { display: flex; gap: 12px; padding: 14px; border: 1px solid #dfe4e3; border-left: 4px solid #bdc9c7; border-radius: 6px; }
+.notificacao.nova { background: #eef7f5; border-left-color: #205e58; }
+.notificacao-icone { display: grid; place-items: center; width: 32px; height: 32px; flex-shrink: 0; background: white; border: 1px solid #bcc9c6; border-radius: 50%; font-size: 20px; }
+.notificacao-conteudo { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.notificacao-etiquetas { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 11px; margin-bottom: 8px; }
+.notificacao-prioridade { border-radius: 12px; padding: 3px 8px; }
+.notificacao-prioridade.alta { color: #8c2323; background: #ffe5e5; }
+.notificacao-prioridade.media { color: #715200; background: #fff2cd; }
+.notificacao-prioridade.baixa { color: #245779; background: #e5f2fc; }
+.notificacao h3 { margin: 0 0 6px; }
+.notificacao p { margin: 0 0 8px; white-space: pre-wrap; }
+.notificacao time { display: block; color: #526461; font-size: 12px; margin-bottom: 8px; }
+.notificacoes-vazio { padding: 20px 0; text-align: center; }
+.topo:has(.notificacoes) { gap: 12px; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .notificacoes-painel { right: 12px; top: 80px; width: calc(100vw - 24px); padding: 14px; }
+  .notificacao { padding: 10px; gap: 8px; }
+  .notificacoes-acoes button { flex-grow: 1; }
+  .topo:has(.notificacoes) > time { display: none; }
+}

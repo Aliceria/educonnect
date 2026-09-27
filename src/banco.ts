@@ -39,10 +39,12 @@ export function abrirBanco(caminho: string) {
     CREATE TABLE IF NOT EXISTS usuarios (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE COLLATE NOCASE, dados TEXT NOT NULL, senha TEXT NOT NULL, recuperacao TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sessoes (token TEXT PRIMARY KEY, usuarioId TEXT NOT NULL, ultimaAtividade INTEGER NOT NULL, criada INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS ajustes (chave TEXT PRIMARY KEY, dados TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS notificacoes_leituras (usuarioId TEXT NOT NULL, id TEXT NOT NULL, criadaEm TEXT NOT NULL, lidaEm TEXT, PRIMARY KEY(usuarioId,id));
     CREATE INDEX IF NOT EXISTS registros_tipo_autor ON registros(tipo, autorId);
     CREATE INDEX IF NOT EXISTS presencas_aula ON registros(json_extract(dados,'$.aulaId')) WHERE tipo='presencas';
     CREATE INDEX IF NOT EXISTS historico_usuario ON historico(usuarioId, id);
     CREATE INDEX IF NOT EXISTS historico_modulo ON historico(modulo, id);
+    CREATE INDEX IF NOT EXISTS historico_registro ON historico(registroId, modulo, acao);
     CREATE INDEX IF NOT EXISTS compartilhamentos_material ON compartilhamentos(materialId);
   `);
   function mascararValor(valor: unknown): unknown {
