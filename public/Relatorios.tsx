@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { api } from './api';
 import type { Aluno } from '../src/integracao';
 import type { Relatorio } from '../src/modulos/Relatorios';
+import type { Usuario } from '../src/banco';
+import { podeGerarRelatorio } from '../src/permissoes';
 
 const opcoes = {
   individual: 'Individual do aluno',
@@ -27,10 +29,16 @@ export default function Relatorios() {
   const [consulta, setConsulta] = useState('');
   const [erro, setErro] = useState('');
   const [ocupado, setOcupado] = useState(false);
+  const [tiposPermitidos, setTiposPermitidos] = useState<string[]>([]);
   useEffect(() => {
     const carregar = () => {
-      void api<{ alunos: Aluno[] }>('/referencias')
-        .then((r) => setAlunos(r.alunos))
+      void Promise.all([api<{ alunos: Aluno[] }>('/referencias'), api<Usuario>('/auth/eu')])
+        .then(([r, usuario]) => {
+          setAlunos(r.alunos);
+          const tipos = Object.keys(opcoes).filter(tipo => podeGerarRelatorio(usuario, tipo));
+          setTiposPermitidos(tipos);
+          setTipo(atual => tipos.includes(atual) ? atual : tipos[0] ?? '');
+        })
         .catch((e) => setErro(e.message));
     };
     carregar();
@@ -54,11 +62,12 @@ export default function Relatorios() {
   return (
     <div className="cadastro">
       <h2>Relatórios</h2>
+      {!tiposPermitidos.length && <p>Nenhum tipo de relatório liberado para os módulos deste usuário.</p>}
       <div className="campos">
         <label>
           Relatório
           <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
-            {Object.entries(opcoes).map(([k, v]) => (
+            {Object.entries(opcoes).filter(([k]) => tiposPermitidos.includes(k)).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
               </option>
@@ -85,7 +94,7 @@ export default function Relatorios() {
           <input type="date" value={fim} onChange={(e) => setFim(e.target.value)} />
         </label>
       </div>
-      <button disabled={ocupado || (tipo === 'responsavel' && !alunoId)} onClick={gerar}>
+      <button disabled={ocupado || !tiposPermitidos.includes(tipo) || (tipo === 'responsavel' && !alunoId)} onClick={gerar}>
         Gerar relatório
       </button>
       {erro && (

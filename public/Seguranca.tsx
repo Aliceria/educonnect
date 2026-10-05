@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { api } from './api';
 import type { Usuario } from '../src/banco';
 import type { Professor } from '../src/modulos/Professores';
+import { perfis, modulos, modulosAdmin, nomesModulos } from '../src/permissoes';
 
 export function Entrada({ onEntrar }: { onEntrar: (u: Usuario) => void }) {
   const [instalado, setInstalado] = useState<boolean | null>(null);
@@ -154,17 +155,7 @@ export function Entrada({ onEntrar }: { onEntrar: (u: Usuario) => void }) {
   );
 }
 
-const permissoes = [
- 'alunos','agendamento','planejamento','acompanhamento','pagamentos','comunicacao','areaProfessor','dashboard',
-  'professores',
-  'disciplinas',
-  'materiais',
-  'avaliacoes',
-  'presenca',
-  'relatorios',
-  'financeiro',
-  'historico',
-];
+const permissoes = modulos.filter(modulo => !modulosAdmin.includes(modulo));
 export default function Seguranca() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [alunos,setAlunos]=useState<{id:string;nome:string}[]>([]);
@@ -181,7 +172,8 @@ export default function Seguranca() {
         api<Usuario[]>('/usuarios'),
         api<Professor[]>('/professores'),
       ]);
-      const refs=await api<{alunos:{id:string;nome:string}[]}>('/referencias');setAlunos(refs.alunos);
+      const refs=await api<{alunos:{id:string;nome:string;status:string}[]}>('/referencias');
+      setAlunos(refs.alunos.filter(aluno => aluno.status === 'Ativo'));
       setUsuarios(u);
       setProfessores(p);
     } catch (e) {
@@ -287,15 +279,19 @@ export default function Seguranca() {
                 Perfil
                 <select
                   value={form.perfil}
-                  onChange={(e) =>
-                    setForm({ ...form, perfil: e.target.value as Usuario['perfil'] })
-                  }
+                  onChange={(e) => {
+                    const perfil = e.target.value as Usuario['perfil'];
+                    setForm({ ...form, perfil,
+                      professorId: perfil === 'Professor' ? form.professorId : '',
+                      alunoId: ['Aluno', 'Responsável'].includes(perfil) ? form.alunoId : '',
+                      permissoes: perfil === 'Professor' ? form.permissoes : [],
+                    });
+                  }}
                 >
-                  <option>Professor</option>
-                  <option>Administrador</option><option>Aluno</option><option>Responsável</option>
+                  {perfis.map(perfil => <option key={perfil}>{perfil}</option>)}
                 </select>
               </label>
-              <label>
+              {form.perfil === 'Professor' && <label>
                 Professor vinculado
                 <select
                   required={form.perfil === 'Professor'}
@@ -303,13 +299,13 @@ export default function Seguranca() {
                   onChange={(e) => setForm({ ...form, professorId: e.target.value })}
                 >
                   <option value="">Sem vínculo</option>
-                  {professores.map((p) => (
+                  {professores.filter(p => p.ativo || p.id === form.professorId).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.nome}
                     </option>
                   ))}
                 </select>
-              </label>
+              </label>}
               {['Aluno','Responsável'].includes(form.perfil)&&<label>Aluno vinculado<select required value={form.alunoId??''} onChange={e=>setForm({...form,alunoId:e.target.value})}><option value="">Selecione</option>{alunos.map(a=><option key={a.id} value={a.id}>{a.nome}</option>)}</select></label>}
               <label>
                 Status
@@ -322,7 +318,9 @@ export default function Seguranca() {
                 </select>
               </label>
             </div>
-            <h4>Módulos permitidos</h4><p>Aluno e responsável acessam somente sua área e os materiais compartilhados para seu vínculo. As permissões abaixo se aplicam ao professor.</p>
+            {form.perfil === 'Professor' ? <>
+            <h4>Módulos permitidos</h4>
+            <p>Pagamentos exige também a permissão de dados financeiros. Relatórios respeitam os módulos liberados.</p>
             <div className="permissoes">
               {permissoes.map((p) => (
                 <label key={p}>
@@ -338,10 +336,13 @@ export default function Seguranca() {
                       })
                     }
                   />
-                  {p}
+                  {nomesModulos[p as keyof typeof nomesModulos]}
                 </label>
               ))}
             </div>
+            </> : <p>{form.perfil === 'Administrador'
+              ? 'O administrador tem acesso a todos os módulos e ao gerenciamento de usuários.'
+              : 'Aluno e responsável acessam somente sua área e os materiais compartilhados para o aluno vinculado.'}</p>}
             <p>
               Alterar um usuário encerra as sessões dele. Não é possível desativar o último
               administrador.

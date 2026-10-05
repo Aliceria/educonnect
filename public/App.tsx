@@ -19,6 +19,7 @@ import Configuracoes from './Configuracoes';
 import Seguranca, { Entrada } from './Seguranca';
 import Historico from './Historico';
 import Notificacoes from './Notificacoes';
+import { podeAcessar } from '../src/permissoes';
 
 const modulos = [
   { id: 'alunos', nome: 'Alunos', tela: Alunos },
@@ -50,7 +51,7 @@ export default function App() {
     const primeiro =
       u.perfil === 'Administrador'
         ? 'dashboard'
-        : (modulos.find((m) => u.permissoes.includes(m.id))?.id ?? '');
+        : (modulos.find((m) => podeAcessar(u, m.id))?.id ?? '');
     setSelecionado(primeiro);
     setVisitados(primeiro ? [primeiro] : []);
   }
@@ -104,14 +105,7 @@ export default function App() {
       window.removeEventListener('keydown', atividade);
     };
   }, [usuario]);
-  const permitidos = modulos.filter(
-    (m) =>
-      usuario &&
-      (usuario.perfil === 'Administrador' ||
-        (!['configuracoes', 'seguranca'].includes(m.id) &&
-          usuario.permissoes.includes(m.id) &&
-          (m.id !== 'pagamentos' || usuario.permissoes.includes('financeiro')))),
-  );
+  const permitidos = modulos.filter(m => usuario && podeAcessar(usuario, m.id));
   const grupos = [
     { nome: 'Visão geral', ids: ['dashboard', 'areaProfessor'] },
     { nome: 'Aulas', ids: ['alunos', 'agendamento', 'planejamento', 'acompanhamento'] },
