@@ -5,6 +5,7 @@ import { referencias } from '../integracao.ts';
 import type { Fontes } from '../integracao.ts';
 import { calcularFrequencia } from './Presenca.ts';
 import { ErroCadastro } from './Professores.ts';
+import { podeAcessar, podeGerarRelatorio } from '../permissoes.ts';
 
 export const tiposRelatorio = {
   individual: 'Relatório individual do aluno',
@@ -36,7 +37,9 @@ export function gerarRelatorio(
 ): Relatorio {
   const tipo = params.get('tipo') ?? 'individual';
   if (!Object.hasOwn(tiposRelatorio, tipo)) throw new ErroCadastro('Relatório inválido.');
-  if (['financeiro', 'pendentes', 'faturamento'].includes(tipo)) permitir(usuario, 'financeiro');
+  permitir(usuario, 'relatorios');
+  if (!podeGerarRelatorio(usuario, tipo))
+    throw new ErroCadastro('Você não tem permissão para os dados deste relatório.', 403);
   const inicio = params.get('inicio') ?? '';
   const fim = params.get('fim') ?? '';
   for (const valor of [inicio, fim])
@@ -77,7 +80,13 @@ export function gerarRelatorio(
   const conteudos = banco.listar('conteudos', usuario);
   const aulas = ref.aulas
     .filter((a) => selecionado(a.alunoId) && periodo(a.data))
-    .map((a) => ({ ...a, status: presencas.find((p) => p.aulaId === a.id)?.status ?? a.status }));
+    .map((a) => ({
+      ...a,
+      conteudos: podeAcessar(usuario, 'planejamento') ? a.conteudos : '',
+      status: podeAcessar(usuario, 'presenca')
+        ? presencas.find((p) => p.aulaId === a.id)?.status ?? a.status
+        : a.status,
+    }));
   const realizadas = aulas.filter((a) =>
     ['Presente', 'Reposição realizada', 'Realizada'].includes(String(a.status)),
   );

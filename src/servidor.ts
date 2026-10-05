@@ -29,6 +29,7 @@ import { validarComunicacao, prepararEnvio } from './modulos/Comunicacao.ts';
 import { resumoDashboard } from './modulos/Dashboard.ts';
 import { meusDados, solicitarPrivacidade, responderPrivacidade } from './modulos/AreaProfessor.ts';
 import { listarNotificacoes, marcarNotificacoes } from './modulos/Notificacoes.ts';
+import { podeAcessar } from './permissoes.ts';
 
 export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pastaBackup?: string) {
   const banco = abrirBanco(caminhoBanco);
@@ -208,7 +209,7 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
         return;
       }
       if (caminho === '/api/auth/perfil' && metodo === 'PUT') {
-        responder(200, acesso.perfil(corpo, usuario));
+        responder(200, transacao(() => acesso.perfil(corpo, usuario)));
         return;
       }
       if (caminho === '/api/meus-dados' && metodo === 'GET') {
@@ -226,22 +227,25 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
         );
       if (caminho === '/api/referencias' && metodo === 'GET') {
         const ref = referencias(fontes, usuario);
+        const consulta = (...modulos: string[]) => modulos.some(modulo => podeAcessar(usuario, modulo));
         responder(200, {
-          ...ref,
-          professores: professores
+          alunos: consulta('alunos', 'agendamento', 'planejamento', 'acompanhamento', 'pagamentos',
+            'comunicacao', 'materiais', 'avaliacoes', 'presenca', 'relatorios', 'seguranca')
+            ? ref.alunos.map(a => ({ id: a.id, nome: a.nome, professorId: a.professorId, status: a.status }))
+            : [],
+          aulas: consulta('agendamento', 'planejamento', 'acompanhamento', 'materiais', 'presenca')
+            ? ref.aulas.map(a => ({ id: a.id, alunoId: a.alunoId, data: a.data })) : [],
+          professores: consulta('alunos', 'agendamento', 'professores', 'seguranca') ? professores
             .listar()
             .filter((p) => usuario.perfil === 'Administrador' || p.id === usuario.professorId)
-            .map((p) => ({ ...p })),
-          materiais:
-            usuario.perfil === 'Administrador' ||
-            usuario.permissoes.some((p) => ['planejamento', 'materiais'].includes(p))
+            .map((p) => ({ id: p.id, nome: p.nome, ativo: p.ativo,
+              ...(consulta('agendamento') ? { horarios: p.horarios } : {}) })) : [],
+          materiais: consulta('planejamento', 'materiais')
               ? banco.listar('materiais', usuario).map((m) => ({ id: m.id, nome: m.dados.nome }))
               : [],
-          pacotes: banco.listar('pacotes', usuario).map((p) => ({ id: p.id, nome: p.dados.nome })),
-          pagamentos:
-            usuario.perfil === 'Administrador' || usuario.permissoes.includes('financeiro')
-              ? ref.pagamentos
-              : [],
+          pacotes: consulta('agendamento', 'pagamentos')
+            ? banco.listar('pacotes', usuario).map((p) => ({ id: p.id, nome: p.dados.nome })) : [],
+          pagamentos: consulta('pagamentos') ? ref.pagamentos : [],
         });
         return;
       }
@@ -310,7 +314,7 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
       }
       const usuarioId = /^\/api\/usuarios\/([a-f0-9-]+)$/.exec(caminho)?.[1];
       if (usuarioId && metodo === 'PUT') {
-        responder(200, acesso.editar(usuarioId, corpo, usuario));
+        responder(200, transacao(() => acesso.editar(usuarioId, corpo, usuario)));
         return;
       }
       const prof = /^\/api\/professores(?:\/([a-f0-9-]+)(\/status)?)?$/.exec(caminho);
@@ -425,16 +429,15 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
         const consultaRelacionada =
           metodo === 'GET' &&
           ['disciplinas', 'conteudos'].includes(tipo) &&
-          usuario.permissoes.some((p) =>
-            [
+          !podeAcessar(usuario, rota.modulo) &&
+          [
               'materiais',
               'avaliacoes',
               'presenca',
               'relatorios',
               'planejamento',
               'acompanhamento',
-            ].includes(p),
-          );
+          ].some(modulo => podeAcessar(usuario, modulo));
         if (!consultaRelacionada) permitir(usuario, rota.modulo);
         if (['pagamentos', 'pacotes'].includes(tipo)) permitir(usuario, 'financeiro');
         if (tipo === 'aulas' && id && metodo === 'DELETE') {
@@ -444,7 +447,10 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
         if (metodo === 'GET') {
           if (id) banco.buscar(tipo, id, usuario);
           const resultados = banco.listar(tipo, usuario).map((r) =>
-            tipo === 'pagamentos'
+            consultaRelacionada
+              ? { ...r, dados: { nome: r.dados.nome,
+                  ...(tipo === 'conteudos' ? { disciplinaId: r.dados.disciplinaId } : {}) } }
+              : tipo === 'pagamentos'
               ? { ...r, dados: { ...r.dados, status: situacaoPagamento(r.dados) } }
               : tipo === 'materiais'
                 ? {

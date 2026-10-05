@@ -1,6 +1,8 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { ErroCadastro } from './modulos/Professores.ts';
+import { podeAcessar } from './permissoes.ts';
+export { modulos } from './permissoes.ts';
 
 export type Dados = Record<string, unknown>;
 export type Usuario = {
@@ -15,19 +17,6 @@ export type Usuario = {
   ativo: boolean;
 };
 export type Registro = { id: string; tipo: string; autorId: string; versao: number; dados: Dados };
-export const modulos = [
-  'alunos', 'agendamento', 'planejamento', 'acompanhamento', 'pagamentos', 'comunicacao', 'areaProfessor', 'dashboard',
-  'professores',
-  'disciplinas',
-  'materiais',
-  'avaliacoes',
-  'presenca',
-  'relatorios',
-  'financeiro',
-  'configuracoes',
-  'seguranca',
-  'historico',
-];
 
 export function abrirBanco(caminho: string) {
   const db = new DatabaseSync(caminho);
@@ -138,7 +127,7 @@ export function abrirBanco(caminho: string) {
 }
 export type Banco = ReturnType<typeof abrirBanco>;
 export function permitir(usuario: Usuario, modulo: string, somenteAdmin = false) {
-  if (['Aluno','Responsável'].includes(usuario.perfil) || (usuario.perfil !== 'Administrador' && (somenteAdmin || !usuario.permissoes.includes(modulo))))
+  if (!podeAcessar(usuario, modulo) || (somenteAdmin && usuario.perfil !== 'Administrador'))
     throw new ErroCadastro('Você não tem permissão para esta operação.', 403);
 }
 export function objeto(valor: unknown): Dados {

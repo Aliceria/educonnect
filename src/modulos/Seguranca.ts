@@ -3,6 +3,7 @@ import { promisify } from 'node:util';
 import { ErroCadastro } from './Professores.ts';
 import { objeto, texto, modulos, permitir } from '../banco.ts';
 import type { Banco, Usuario, Dados } from '../banco.ts';
+import { perfis, modulosAdmin } from '../permissoes.ts';
 
 const derivar = promisify(scrypt);
 const resumo = (texto: string) => createHash('sha256').update(texto).digest('hex');
@@ -51,7 +52,7 @@ export function seguranca(banco: Banco) {
     const email = texto(d, 'email', true, 254).toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ErroCadastro('E-mail inválido.');
     if (
-      !['Administrador', 'Professor', 'Aluno', 'Responsável'].includes(String(d.perfil)) ||
+      !perfis.some(perfil => perfil === d.perfil) ||
       typeof d.perfil !== 'string'
     )
       throw new ErroCadastro('Perfil inválido.');
@@ -90,7 +91,8 @@ export function seguranca(banco: Banco) {
       alunoId,
       telefone: texto({ ...d, telefone: d.telefone ?? '' }, 'telefone', false, 30),
       ativo: d.ativo,
-      permissoes: portal ? [] : [...new Set(d.permissoes as string[])],
+      permissoes: portal ? [] : d.perfil === 'Administrador' ? [...modulos]
+        : [...new Set(d.permissoes as string[])].filter(modulo => !modulosAdmin.includes(modulo)),
     };
   }
   async function criar(entrada: unknown, autor?: Usuario) {
