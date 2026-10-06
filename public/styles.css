@@ -586,6 +586,20 @@ summary {
   }
 }
 
+.materiais-lista { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.material-cartao { min-width: 0; border: 1px solid var(--borda); border-radius: 6px; padding: 18px; margin-bottom: 14px; overflow-wrap: anywhere; }
+.material-cartao h3, .material-cartao h4 { margin-top: 0; }
+.material-cartao .cabecalho { align-items: flex-start; margin-bottom: 12px; }
+.material-situacao { background: #edf5f2; color: var(--verde); padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+.material-detalhes { display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: 10px; font-size: 13px; }
+.material-detalhes dt { color: var(--muted); }
+.material-detalhes dd { margin: 0; overflow-wrap: anywhere; }
+.material-compartilhado { color: var(--verde); font-size: 13px; }
+.material-historico { border-bottom: 1px solid var(--borda); padding: 14px 0; overflow-wrap: anywhere; }
+.material-historico:last-child { border-bottom: 0; }
+.material-historico h4 { margin: 0 0 10px; }
+.materiais input[type=file] { max-width: 100%; }
+.portal summary { cursor: pointer; margin: 14px 0; }
 .dashboard { min-width: 0; }
 .dashboard .cadastro { min-width: 0; overflow-wrap: anywhere; }
 .dashboard .resumos { grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); }

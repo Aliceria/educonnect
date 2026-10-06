@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import type { meusDados } from '../src/modulos/AreaProfessor';
 
@@ -10,15 +10,26 @@ export default function AreaProfessor() {
   const [perfil, setPerfil] = useState<{ nome: string; email: string; telefone: string } | null>(null);
   const [pedido, setPedido] = useState('');
   const [resposta, setResposta] = useState('');
+  const consulta = useRef(0);
 
   function carregar() {
+    const atual = ++consulta.current;
     api<ReturnType<typeof meusDados>>('/meus-dados')
-      .then(setDados)
-      .catch((e) => setErro((e as Error).message));
+      .then(dados => { if (atual === consulta.current) { setDados(dados); setErro(''); } })
+      .catch((e) => { if (atual === consulta.current) setErro((e as Error).message); });
   }
 
   useEffect(() => {
     carregar();
+    window.addEventListener('focus', carregar);
+    window.addEventListener('cadastro-atualizado', carregar);
+    const timer = setInterval(() => { if (!document.hidden) carregar(); }, 30000);
+    return () => {
+      consulta.current++;
+      window.removeEventListener('focus', carregar);
+      window.removeEventListener('cadastro-atualizado', carregar);
+      clearInterval(timer);
+    };
   }, []);
 
   return (
@@ -131,19 +142,30 @@ export default function AreaProfessor() {
           </section>
 
           <section className="cadastro">
-            <h3>Materiais compartilhados</h3>
+            <div className="cabecalho"><h3>Materiais compartilhados</h3>
+              <button onClick={carregar}>Atualizar materiais</button></div>
 
             {dados.materiais.length ? (
               dados.materiais.map((m) => (
-                <p key={m.id}>
-                  <a href={`/api/compartilhados/${m.id}`} target="_blank" rel="noreferrer">
-                    {m.nome}
-                  </a>
-                </p>
+                <article className="material-cartao" key={m.id}>
+                  <h4><a href={`/api/compartilhados/${m.id}`} target="_blank" rel="noreferrer">{m.nome}</a></h4>
+                  {m.descricao && <p>{m.descricao}</p>}
+                  <p>{m.disciplina}{m.aula ? ' — Aula: ' + new Date(m.aula).toLocaleString('pt-BR') : ''}</p>
+                  <p>Compartilhado por {m.autor} em {new Date(m.data).toLocaleString('pt-BR')}.</p>
+                  <p>Disponível até {new Date(m.expiraEm).toLocaleString('pt-BR')}.</p>
+                </article>
               ))
             ) : (
               <p>Nenhum material disponível.</p>
             )}
+            <details>
+              <summary>Histórico de materiais ({dados.historicoMateriais.length})</summary>
+              {dados.historicoMateriais.map(m => <article className="material-historico" key={m.id}>
+                <h4>{m.nome}</h4><p>{m.disciplina} — {m.situacao}</p>
+                {m.descricao && <p>{m.descricao}</p>}
+                <p>Compartilhado em {new Date(m.data).toLocaleString('pt-BR')} por {m.autor}.</p>
+              </article>)}
+            </details>
           </section>
 
           {dados.usuario.perfil === 'Responsável' && (
