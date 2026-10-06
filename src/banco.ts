@@ -35,6 +35,8 @@ export function abrirBanco(caminho: string) {
     CREATE INDEX IF NOT EXISTS historico_modulo ON historico(modulo, id);
     CREATE INDEX IF NOT EXISTS historico_registro ON historico(registroId, modulo, acao);
     CREATE INDEX IF NOT EXISTS compartilhamentos_material ON compartilhamentos(materialId);
+    CREATE INDEX IF NOT EXISTS compartilhamentos_destinatario ON compartilhamentos(alunoId,destinatario,data);
+    CREATE INDEX IF NOT EXISTS historico_compartilhamento ON historico(json_extract(detalhes,'$.compartilhamentoId')) WHERE modulo='materiais' AND acao='Link de compartilhamento criado';
   `);
   function mascararValor(valor: unknown): unknown {
     if (valor === null || valor === undefined) return valor;

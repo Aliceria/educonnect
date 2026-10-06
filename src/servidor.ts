@@ -9,7 +9,7 @@ import { fontesDoBanco, referencias } from './integracao.ts';
 import type { Fontes } from './integracao.ts';
 import { seguranca } from './modulos/Seguranca.ts';
 import { validarDisciplina, validarConteudo, validarAprendizado } from './modulos/Disciplinas.ts';
-import { validarMaterial, guardarAnexo, compartilharMaterial } from './modulos/Materiais.ts';
+import { validarMaterial, guardarAnexo, compartilharMaterial, listarCompartilhamentos, referenciasMateriais } from './modulos/Materiais.ts';
 import { validarAvaliacao } from './modulos/Avaliacoes.ts';
 import { validarPresenca } from './modulos/Presenca.ts';
 import { gerarRelatorio, gerarPdf } from './modulos/Relatorios.ts';
@@ -107,7 +107,8 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
       if (!['GET', 'HEAD'].includes(metodo)) {
         if (req.headers['content-type']?.split(';')[0].trim() !== 'application/json')
           throw new ErroCadastro('Envie os dados em JSON.', 415);
-        const limite = caminho.endsWith('/anexo') ? 7200000 : 100000;
+        const limite = caminho.endsWith('/anexo') || /^\/api\/registros\/materiais(?:\/[a-f0-9-]+)?$/.test(caminho)
+          ? 7200000 : 100000;
         const partes: Buffer[] = [];
         let tamanho = 0;
         for await (const parte of req) {
@@ -411,7 +412,7 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
         },
         materiais: {
           modulo: 'materiais',
-          validar: (d) => validarMaterial(d, banco, usuario, fontes),
+          validar: (d, id) => validarMaterial(d, banco, usuario, fontes, id),
         },
         avaliacoes: {
           modulo: 'avaliacoes',
@@ -446,7 +447,11 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
         }
         if (metodo === 'GET') {
           if (id) banco.buscar(tipo, id, usuario);
-          const resultados = banco.listar(tipo, usuario).map((r) =>
+          const registros = banco.listar(tipo, usuario);
+          const anexos = new Map(tipo === 'materiais' ? banco.db.prepare(
+            'SELECT registroId,nome,length(conteudo) tamanho FROM anexos WHERE registroId IN (SELECT value FROM json_each(?))',
+          ).all(JSON.stringify(registros.map(r => r.id))).map(a => [String(a.registroId), { nome: a.nome, tamanho: a.tamanho }]) : []);
+          const resultados = registros.map((r) =>
             consultaRelacionada
               ? { ...r, dados: { nome: r.dados.nome,
                   ...(tipo === 'conteudos' ? { disciplinaId: r.dados.disciplinaId } : {}) } }
@@ -455,12 +460,7 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
               : tipo === 'materiais'
                 ? {
                     ...r,
-                    anexo:
-                      banco.db
-                        .prepare(
-                          'SELECT nome, length(conteudo) AS tamanho FROM anexos WHERE registroId=?',
-                        )
-                        .get(r.id) ?? null,
+                    anexo: anexos.get(r.id) ?? null,
                   }
                 : r,
           );
@@ -496,6 +496,8 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
                 if (aluno) dados.professorId = aluno.professorId;
               }
               const r = banco.salvar(tipo, dados, usuario, id, Number(corpo.versao));
+              if (tipo === 'materiais' && corpo.anexo !== undefined)
+                guardarAnexo(banco, usuario, r.id, objeto(corpo.anexo));
               if (tipo === 'aulas' || tipo === 'presencas') {
                 const aulaId = tipo === 'aulas' ? r.id : String(dados.aulaId);
                 const linha = banco.db
@@ -578,6 +580,15 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
           return;
         }
       }
+      if (caminho === '/api/materiais/referencias' && metodo === 'GET') {
+        responder(200, referenciasMateriais(banco, usuario));
+        return;
+      }
+      if (caminho === '/api/materiais/compartilhamentos' && metodo === 'GET') {
+        permitir(usuario, 'materiais');
+        responder(200, listarCompartilhamentos(banco, usuario));
+        return;
+      }
       const material =
         /^\/api\/materiais\/([a-f0-9-]+)\/(anexo|compartilhar|compartilhamentos)$/.exec(caminho);
       if (material) {
@@ -607,11 +618,7 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
         if (acao === 'compartilhamentos' && metodo === 'GET') {
           responder(
             200,
-            banco.db
-              .prepare(
-                'SELECT alunoId,destinatario,data FROM compartilhamentos WHERE materialId=? ORDER BY data DESC',
-              )
-              .all(id),
+            listarCompartilhamentos(banco, usuario, id),
           );
           return;
         }

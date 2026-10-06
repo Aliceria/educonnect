@@ -1,6 +1,7 @@
 import { situacaoPagamento } from './Pagamentos.ts';
 import type { Banco, Usuario, Dados } from '../banco.ts';
 import { texto, escolha, permitir } from '../banco.ts';
+import { listarCompartilhamentos } from './Materiais.ts';
 export function solicitarPrivacidade(banco: Banco, usuario: Usuario, d: Dados) {
   return banco.salvar(
     'solicitacoes',
@@ -45,18 +46,9 @@ export function meusDados(banco: Banco, usuario: Usuario) {
         .get(usuario.alunoId ?? '')
     : undefined;
   const cadastro = aluno ? JSON.parse(String(aluno.dados)) : {};
-  const materiais = portal
-    ? banco.db
-        .prepare(
-          "SELECT c.id,r.dados FROM compartilhamentos c JOIN registros r ON r.id=c.materialId WHERE c.alunoId=? AND c.destinatario=? AND c.data>=? AND json_extract(r.dados,'$.status')='Ativo'",
-        )
-        .all(
-          usuario.alunoId ?? '',
-          usuario.perfil,
-          new Date(Date.now() - 7 * 86400000).toISOString(),
-        )
-        .map((r) => ({ id: String(r.id), nome: String(JSON.parse(String(r.dados)).nome) }))
-    : [];
+  const historicoMateriais = portal ? listarCompartilhamentos(banco, usuario) : [];
+  const materiais = historicoMateriais.filter(material => material.disponivel)
+    .map(material => ({ ...material, ...material.atual }));
   return {
     usuario,
     solicitacoes: banco.listar('solicitacoes', usuario),
@@ -86,6 +78,7 @@ export function meusDados(banco: Banco, usuario: Usuario) {
       .filter((r) => r.dados.tarefa)
       .map((r) => ({ id: r.id, tarefa: r.dados.tarefa })),
     materiais,
+    historicoMateriais,
     pagamentos:
       usuario.perfil === 'Responsável'
         ? vinculados('pagamentos').map((r) => ({
