@@ -4,6 +4,7 @@ import { ErroCadastro } from './Professores.ts';
 import { normalizarTelefone } from '../telefone.ts';
 import { normalizarNome } from '../nome.ts';
 import { validarSerie } from '../serie.ts';
+import { podeAcessar } from '../permissoes.ts';
 
 // Campos do cadastro da Maria, adaptados para o banco compartilhado.
 export function validarAluno(d: Dados, banco: Banco, usuario: Usuario) {
@@ -43,9 +44,26 @@ export function alunoDoUsuario(banco: Banco, usuario: Usuario, id: string, ativo
   return aluno;
 }
 
-export function historicoAluno(banco:Banco,usuario:Usuario,id:string) {
- const aluno=alunoDoUsuario(banco,usuario,id);
- const tipos:Record<string,string>={aulas:'agendamento',planejamentos:'planejamento',acompanhamentos:'acompanhamento',avaliacoes:'avaliacoes',presencas:'presenca',aprendizados:'disciplinas',pagamentos:'financeiro'};
- const registros=Object.entries(tipos).filter(([,permissao])=>usuario.perfil==='Administrador'||usuario.permissoes.includes(permissao)).flatMap(([tipo])=>banco.listar(tipo,usuario).filter(r=>r.dados.alunoId===id));
- return {aluno,registros:registros.sort((a,b)=>String(b.dados.data??b.dados.vencimento??'').localeCompare(String(a.dados.data??a.dados.vencimento??'')))};
+export function historicoAluno(banco: Banco, usuario: Usuario, id: string) {
+  const aluno = alunoDoUsuario(banco, usuario, id);
+  const categorias: Array<{ tipo: string; permissoes: string[] }> = [
+    { tipo: 'aulas', permissoes: ['agendamento'] },
+    { tipo: 'planejamentos', permissoes: ['planejamento'] },
+    { tipo: 'acompanhamentos', permissoes: ['acompanhamento'] },
+    { tipo: 'avaliacoes', permissoes: ['avaliacoes'] },
+    { tipo: 'presencas', permissoes: ['presenca'] },
+    { tipo: 'aprendizados', permissoes: ['disciplinas'] },
+    { tipo: 'pagamentos', permissoes: ['pagamentos', 'financeiro'] },
+  ];
+  const registros = categorias
+    .filter(({ permissoes }) => permissoes.every((modulo) => podeAcessar(usuario, modulo)))
+    .flatMap(({ tipo }) =>
+      banco.listar(tipo, usuario).filter((registro) => registro.dados.alunoId === id),
+    )
+    .sort((a, b) =>
+      String(b.dados.data ?? b.dados.vencimento ?? b.dados.recebidoEm ?? '').localeCompare(
+        String(a.dados.data ?? a.dados.vencimento ?? a.dados.recebidoEm ?? ''),
+      ),
+    );
+  return { aluno, registros };
 }

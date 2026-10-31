@@ -136,6 +136,38 @@ test('permissões bloqueiam rotas diretas, consultas auxiliares e relatórios em
   } finally { await c.fechar(); }
 });
 
+test('ficha do aluno limita histórico por módulo e mantém o isolamento entre professores', async () => {
+  const c = await cenario();
+  try {
+    const rota = `/alunos/${c.alunos[0].id}/historico`;
+    const inicial = await c.req(rota, 'GET', undefined, c.professor());
+    assert.equal(inicial.status, 200);
+    assert.ok(inicial.dados.registros.some((registro: { tipo: string }) => registro.tipo === 'pagamentos'));
+    assert.ok(inicial.dados.registros.every((registro: { dados: { alunoId: string } }) =>
+      registro.dados.alunoId === c.alunos[0].id));
+
+    await c.alterar(['alunos', 'financeiro']);
+    const semModuloPagamentos = await c.req(rota, 'GET', undefined, c.professor());
+    assert.equal(semModuloPagamentos.status, 200);
+    assert.ok(semModuloPagamentos.dados.registros.every((registro: { tipo: string }) =>
+      registro.tipo !== 'pagamentos'));
+
+    await c.alterar(['alunos']);
+    const semHistorico = await c.req(rota, 'GET', undefined, c.professor());
+    assert.equal(semHistorico.status, 200);
+    assert.deepEqual(semHistorico.dados.registros, []);
+
+    await c.alterar(['dashboard']);
+    assert.equal((await c.req(rota, 'GET', undefined, c.professor())).status, 403);
+
+    await c.alterar(['alunos']);
+    assert.equal(
+      (await c.req(`/alunos/${c.alunos[1].id}/historico`, 'GET', undefined, c.professor())).status,
+      404,
+    );
+  } finally { await c.fechar(); }
+});
+
 test('aluno e responsável acessam seu vínculo e o último administrador fica preservado', async () => {
   const c = await cenario();
   try {

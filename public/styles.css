@@ -665,3 +665,42 @@ summary {
   .notificacoes-acoes button { flex-grow: 1; }
   .topo:has(.notificacoes) > time { display: none; }
 }
+.ficha-aluno { min-width: 0; margin-top: 20px; padding: 22px; background: white; border: 1px solid var(--borda); border-radius: 8px; overflow-wrap: anywhere; }
+.ficha-aluno-cabecalho, .ficha-aluno-historico-cabecalho, .ficha-aluno-evento-cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.ficha-aluno-cabecalho { padding-bottom: 18px; border-bottom: 1px solid var(--borda); }
+.ficha-aluno-cabecalho h3 { margin: 4px 0 6px; font-size: 20px; color: #293b37; }
+.ficha-aluno-cabecalho p { margin: 0; color: var(--muted); }
+.ficha-aluno-sobretitulo { color: var(--verde); font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+.ficha-aluno-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.ficha-aluno-resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0; }
+.ficha-aluno-resumo-item { display: flex; flex-direction: column; gap: 5px; padding: 15px; border: 1px solid var(--borda); border-radius: 7px; background: #fbfcfc; }
+.ficha-aluno-resumo-item span, .ficha-aluno-resumo-item small { color: var(--muted); font-size: 12px; }
+.ficha-aluno-resumo-item strong { color: var(--verde); font-size: 23px; }
+.ficha-aluno-secoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.ficha-aluno-bloco { min-width: 0; padding: 17px; border: 1px solid var(--borda); border-radius: 7px; }
+.ficha-aluno-bloco h4, .ficha-aluno-historico h4 { margin: 0 0 14px; color: #293b37; font-size: 14px; }
+.ficha-aluno-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 14px 18px; margin: 0; }
+.ficha-aluno-campo { min-width: 0; }
+.ficha-aluno-campo dt, .ficha-aluno-detalhes dt { margin-bottom: 4px; color: var(--muted); font-size: 11px; }
+.ficha-aluno-campo dd, .ficha-aluno-detalhes dd { margin: 0; color: #293b37; line-height: 1.5; white-space: pre-wrap; }
+.ficha-aluno-vazio { color: var(--muted); font-size: 13px; }
+.ficha-aluno-historico { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--borda); }
+.ficha-aluno-historico-cabecalho { align-items: end; margin-bottom: 14px; }
+.ficha-aluno-historico-cabecalho p { margin: -7px 0 0; color: var(--muted); font-size: 12px; }
+.ficha-aluno-historico-cabecalho label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
+.ficha-aluno-historico-cabecalho select { min-width: 190px; padding: 8px; }
+.ficha-aluno-lista { display: grid; gap: 10px; }
+.ficha-aluno-evento { padding: 16px; border: 1px solid var(--borda); border-radius: 7px; }
+.ficha-aluno-evento-cabecalho { align-items: center; margin-bottom: 12px; }
+.ficha-aluno-evento-cabecalho h4 { margin: 4px 0 0; font-size: 14px; }
+.ficha-aluno-evento-cabecalho time { flex-shrink: 0; color: var(--muted); font-size: 12px; }
+.ficha-aluno-etiqueta { color: var(--verde); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.ficha-aluno-detalhes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px 18px; margin: 0; }
+.ficha-aluno-detalhes > div { min-width: 0; }
+@media (max-width: 640px) {
+  .ficha-aluno { padding: 15px; }
+  .ficha-aluno-cabecalho, .ficha-aluno-historico-cabecalho { flex-direction: column; align-items: stretch; }
+  .ficha-aluno-acoes { width: 100%; }
+  .ficha-aluno-acoes button { flex: 1; }
+  .ficha-aluno-historico-cabecalho select { width: 100%; }
+}
