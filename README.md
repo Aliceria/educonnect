@@ -21,13 +21,16 @@ relatórios em um único ambiente.
 
 - cadastro e gestão de alunos
 - cadastro de professores e disciplinas
-- agenda por dia, semana ou mês, com navegação entre datas
+- agenda por dia, semana ou mês, com pesquisa, filtros e navegação entre datas
 - cadastro de aulas com modalidade, disciplina e observações
+- detalhes das aulas com planejamento vinculado, etiquetas, membros e checklist
+- cancelamento e registro do resultado da aula pela agenda
 - identificação dos status das aulas por cores
 - exclusão de aulas com confirmação
 - aulas recorrentes e reagendamento
-- planejamento de aulas e modelos reutilizáveis
-- acompanhamento pedagógico, avaliações e presença
+- planejamento de aulas com metodologia, resultados, observações e status do conteúdo
+- acompanhamento pedagógico com evolução, frequência, metas, notas e gráfico de desempenho
+- registro de necessidades educacionais separado do acompanhamento de evolução
 - materiais compartilhados com anexos
 - gestão de pacotes, pagamentos e financeiros
 - dashboard com resumo do dia e pendências

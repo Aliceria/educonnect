@@ -1,7 +1,85 @@
+import { randomUUID } from 'node:crypto';
 import { texto, numero, data, escolha } from '../banco.ts';
 import type { Banco, Dados, Usuario } from '../banco.ts';
 import { alunoDoUsuario } from './Alunos.ts';
 import { ErroCadastro } from './Professores.ts';
+
+type ItemChecklist = { id: string; texto: string; concluido: boolean };
+
+function listaTexto(d: Dados, campo: string, limiteItens: number, limiteTexto: number): string[] {
+  const valor = d[campo];
+  if (valor === undefined || valor === null || valor === '') return [];
+
+  let itens: unknown[];
+  if (Array.isArray(valor)) {
+    itens = valor;
+  } else if (typeof valor === 'string') {
+    try {
+      const convertido: unknown = JSON.parse(valor);
+      itens = Array.isArray(convertido) ? convertido : valor.split(',');
+    } catch {
+      itens = valor.split(',');
+    }
+  } else {
+    throw new ErroCadastro(`Confira o campo ${campo}.`);
+  }
+
+  if (itens.length > limiteItens) {
+    throw new ErroCadastro(`O campo ${campo} possui itens demais.`);
+  }
+
+  const resultado = itens.map((item) => {
+    if (typeof item !== 'string') {
+      throw new ErroCadastro(`Os itens de ${campo} devem ser textos.`);
+    }
+    const textoItem = item.trim();
+    if (textoItem.length > limiteTexto) {
+      throw new ErroCadastro(`Um item de ${campo} é muito grande.`);
+    }
+    return textoItem;
+  });
+
+  return [...new Set(resultado.filter(Boolean))];
+}
+
+function listaChecklist(d: Dados): ItemChecklist[] {
+  const valor = d.checklist;
+  if (valor === undefined || valor === null || valor === '') return [];
+
+  let itens: unknown = valor;
+  if (typeof valor === 'string') {
+    try {
+      itens = JSON.parse(valor);
+    } catch {
+      throw new ErroCadastro('Checklist inválido.');
+    }
+  }
+  if (!Array.isArray(itens)) throw new ErroCadastro('Checklist inválido.');
+  if (itens.length > 100) throw new ErroCadastro('O checklist possui itens demais.');
+
+  const ids = new Set<string>();
+  return itens.map((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw new ErroCadastro(`Item ${index + 1} do checklist inválido.`);
+    }
+    const registro = item as Record<string, unknown>;
+    const descricao = typeof registro.texto === 'string' ? registro.texto.trim() : '';
+    if (!descricao || descricao.length > 300) {
+      throw new ErroCadastro(`Confira a descrição do item ${index + 1} do checklist.`);
+    }
+    const id = typeof registro.id === 'string' && registro.id.trim()
+      ? registro.id.trim()
+      : randomUUID();
+    if (id.length > 100 || ids.has(id)) {
+      throw new ErroCadastro(`Identificador inválido no item ${index + 1} do checklist.`);
+    }
+    if (typeof registro.concluido !== 'boolean') {
+      throw new ErroCadastro(`Confira a conclusão do item ${index + 1} do checklist.`);
+    }
+    ids.add(id);
+    return { id, texto: descricao, concluido: registro.concluido };
+  });
+}
 
 export const estadosAula = [
   'Agendada',
@@ -125,6 +203,18 @@ export function validarAula(d: Dados, banco: Banco, usuario: Usuario, id?: strin
     throw new ErroCadastro('A reposição deve manter o pacote da aula original.');
   if (pacoteId && banco.buscar('pacotes', pacoteId, usuario).dados.alunoId !== alunoId)
     throw new ErroCadastro('Pacote de outro aluno.');
+  const planejamentoId = texto(
+    { ...d, planejamentoId: d.planejamentoId ?? '' },
+    'planejamentoId',
+    false,
+    100,
+  );
+  if (planejamentoId) {
+    const planejamento = banco.buscar('planejamentos', planejamentoId, usuario);
+    if (!id || planejamento.dados.aulaId !== id) {
+      throw new ErroCadastro('O planejamento precisa pertencer a esta aula.');
+    }
+  }
   const link = texto({ ...d, link: d.link ?? '' }, 'link', false);
   if (link) {
     try {
@@ -151,6 +241,10 @@ export function validarAula(d: Dados, banco: Banco, usuario: Usuario, id?: strin
     originalId,
     link,
     conteudos: texto(d, 'conteudos', false),
+    planejamentoId,
+    etiquetas: listaTexto(d, 'etiquetas', 30, 80),
+    membros: listaTexto(d, 'membros', 50, 150),
+    checklist: listaChecklist(d),
   };
 }
 
@@ -165,6 +259,7 @@ export function reagendar(banco: Banco, usuario: Usuario, id: string, d: Dados) 
     hora: texto(d, 'hora'),
     status: 'Agendada',
     originalId: id,
+    planejamentoId: '',
   };
   return banco.salvar('aulas', validarAula(nova, banco, usuario), usuario);
 }
@@ -186,6 +281,7 @@ export function repetirAula(banco: Banco, usuario: Usuario, id: string, d: Dados
             ...original.dados,
             data: dia.toISOString().slice(0, 10),
             originalId: '',
+            planejamentoId: '',
           },
           banco,
           usuario,

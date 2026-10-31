@@ -80,6 +80,7 @@ function formatarCampo(campo: CampoExibicao): string {
     const valor = Number(campo.valor);
     return Number.isFinite(valor) ? moeda.format(valor) : '';
   }
+  if (Array.isArray(campo.valor)) return campo.valor.map(texto).filter(Boolean).join(', ');
   return texto(campo.valor);
 }
 
@@ -111,19 +112,43 @@ function camposDoRegistro(registro: Registro): CampoExibicao[] {
       { rotulo: 'Observações', valor: d.observacoes },
       { rotulo: 'Justificativa', valor: d.justificativa },
       { rotulo: 'Conteúdos', valor: d.conteudos },
+      { rotulo: 'Etiquetas', valor: d.etiquetas },
+      { rotulo: 'Membros', valor: d.membros },
+      {
+        rotulo: 'Checklist',
+        valor: Array.isArray(d.checklist)
+          ? d.checklist.map((item) => {
+              if (!item || typeof item !== 'object') return '';
+              const tarefa = item as { texto?: unknown; concluido?: unknown };
+              return `${tarefa.concluido === true ? '[Concluído]' : '[Pendente]'} ${texto(tarefa.texto)}`;
+            })
+          : d.checklist,
+      },
     ],
     planejamentos: [
       { rotulo: 'Previsto', valor: d.previsto },
       { rotulo: 'Objetivos', valor: d.objetivos },
+      { rotulo: 'Metodologia', valor: d.metodologia },
       { rotulo: 'Atividades', valor: d.atividades },
       { rotulo: 'Trabalhado', valor: d.trabalhado },
+      { rotulo: 'Resultado', valor: d.resultado },
+      { rotulo: 'Observações', valor: d.observacoes },
+      { rotulo: 'Status do conteúdo', valor: d.statusConteudo },
       { rotulo: 'Tarefa', valor: d.tarefa },
       { rotulo: 'Retomar na próxima aula', valor: d.retomar },
     ],
     acompanhamentos: [
       { rotulo: 'Tipo', valor: d.tipo },
+      { rotulo: 'Disciplina', valor: d.disciplina },
+      { rotulo: 'Avaliação', valor: d.avaliacao },
+      { rotulo: 'Nota', valor: d.nota },
+      { rotulo: 'Frequência', valor: d.frequencia },
       { rotulo: 'Evolução', valor: d.evolucao },
+      { rotulo: 'Pontos fortes', valor: d.pontosFortes },
       { rotulo: 'Dificuldades', valor: d.dificuldades },
+      { rotulo: 'Meta', valor: d.meta },
+      { rotulo: 'Objetivo', valor: d.objetivo },
+      { rotulo: 'Progresso da meta', valor: d.progressoMeta === undefined ? '' : `${d.progressoMeta}%` },
       { rotulo: 'Retomar', valor: d.retomar },
     ],
     avaliacoes: [

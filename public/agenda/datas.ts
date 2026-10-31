@@ -17,6 +17,20 @@ export function limitesPeriodo(dia: string, periodo: Periodo) {
   }
   return { inicio: iso(inicio), fim: iso(fim) };
 }
+export function diasVisiveis(dia: string, periodo: Periodo) {
+  const { inicio, fim } = limitesPeriodo(dia, periodo);
+  const primeiro = ler(inicio);
+  const ultimo = ler(fim);
+  if (periodo === 'Mês') {
+    primeiro.setUTCDate(primeiro.getUTCDate() - (primeiro.getUTCDay() + 6) % 7);
+    ultimo.setUTCDate(ultimo.getUTCDate() + (7 - ultimo.getUTCDay()) % 7);
+  }
+  const dias: string[] = [];
+  for (const cursor = new Date(primeiro); cursor <= ultimo; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+    dias.push(iso(cursor));
+  }
+  return dias;
+}
 export function navegarData(dia: string, periodo: Periodo, direcao: number) {
   const data = ler(dia);
   if (periodo === 'Mês') {

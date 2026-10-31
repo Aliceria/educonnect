@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { criarServidor } from './servidor.ts';
-import { limitesPeriodo, navegarData, formatarData } from '../public/agenda/datas.ts';
+import { limitesPeriodo, navegarData, formatarData, diasVisiveis } from '../public/agenda/datas.ts';
 import { horarioForaDisponibilidade } from '../public/agenda/auxiliares.ts';
 
 test('aviso de disponibilidade aceita duração digitada como texto', () => {
@@ -18,6 +18,14 @@ test('períodos cobrem segunda a domingo, fevereiro bissexto e virada do ano', (
   assert.equal(navegarData('2026-01-01', 'Dia', -1), '2025-12-31');
   assert.equal(navegarData('2026-09-27', 'Semana', 1), '2026-10-04');
   assert.equal(formatarData('2026-09-26'), '26/09/2026');
+  assert.deepEqual(diasVisiveis('2026-09-27', 'Semana'), [
+    '2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24',
+    '2026-09-25', '2026-09-26', '2026-09-27',
+  ]);
+  const mes = diasVisiveis('2024-02-15', 'Mês');
+  assert.equal(mes[0], '2024-01-29');
+  assert.equal(mes[mes.length - 1], '2024-03-03');
+  assert.equal(mes.length % 7, 0);
 });
 
 test('API persiste dados da aula e protege exclusão, vínculos, saldo e permissões', async () => {
@@ -63,9 +71,43 @@ test('API persiste dados da aula e protege exclusão, vínculos, saldo e permiss
     assert.equal((await request('/saldos')).data[0].restantes, 4);
     assert.equal((await request('/registros/aulas/' + aula.id)).status, 404);
     const original = await create('aulas', { ...dados, status: 'Agendada' });
-    const plano = await create('planejamentos', { aulaId: original.id, previsto: 'Revisão', objetivos: 'Aprender', atividades: '', conteudos: '', materiais: '', trabalhado: '', tarefa: '', retomar: '' });
+    const plano = await create('planejamentos', { aulaId: original.id, previsto: 'Revisão', objetivos: 'Aprender',
+      metodologia: 'Exercícios guiados', atividades: '', conteudos: '', materiais: '', trabalhado: '',
+      resultado: 'Objetivo atingido', observacoes: '', statusConteudo: 'Concluído', tarefa: '', retomar: '' });
     assert.ok(plano.id);
-    assert.equal((await request('/registros/aulas/' + original.id, 'DELETE', { versao: original.versao })).status, 409);
+    assert.equal(plano.dados.metodologia, 'Exercícios guiados');
+    assert.equal(plano.dados.statusConteudo, 'Concluído');
+    const aulaComDetalhes = await request('/registros/aulas/' + original.id, 'PUT', {
+      dados: {
+        ...original.dados,
+        planejamentoId: plano.id,
+        etiquetas: ['Prova', 'Prova'],
+        membros: ['Responsável', 'Responsável'],
+        checklist: [{ id: 'item-1', texto: 'Separar exercícios', concluido: false }],
+      },
+      versao: original.versao,
+    });
+    assert.equal(aulaComDetalhes.status, 200);
+    assert.deepEqual(aulaComDetalhes.data.dados.etiquetas, ['Prova']);
+    assert.deepEqual(aulaComDetalhes.data.dados.membros, ['Responsável']);
+    assert.deepEqual(aulaComDetalhes.data.dados.checklist, [
+      { id: 'item-1', texto: 'Separar exercícios', concluido: false },
+    ]);
+    assert.equal((await request('/registros/aulas/' + original.id, 'PUT', {
+      dados: { ...aulaComDetalhes.data.dados, checklist: [{ id: 'item-1', texto: 'Tarefa', concluido: 'sim' }] },
+      versao: aulaComDetalhes.data.versao,
+    })).status, 400);
+    const outraAula = await create('aulas', { ...dados, data: '2026-01-06', hora: '12:00', status: 'Agendada' });
+    const outroPlano = await create('planejamentos', {
+      aulaId: outraAula.id, previsto: 'Leitura', objetivos: 'Ler', metodologia: '',
+      atividades: '', conteudos: '', materiais: '', trabalhado: '', resultado: '',
+      observacoes: '', statusConteudo: 'Planejado', tarefa: '', retomar: '',
+    });
+    assert.equal((await request('/registros/aulas/' + original.id, 'PUT', {
+      dados: { ...aulaComDetalhes.data.dados, planejamentoId: outroPlano.id },
+      versao: aulaComDetalhes.data.versao,
+    })).status, 400);
+    assert.equal((await request('/registros/aulas/' + original.id, 'DELETE', { versao: aulaComDetalhes.data.versao })).status, 409);
     const cancelada = await create('aulas', { ...dados, hora: '14:00', status: 'Cancelada pelo professor' });
     const reposicao = await create('aulas', { ...dados, hora: '15:00', status: 'Reposição', originalId: cancelada.id });
     assert.equal(reposicao.dados.status, 'Agendada');

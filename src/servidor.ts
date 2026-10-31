@@ -244,6 +244,13 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
           materiais: consulta('planejamento', 'materiais')
               ? banco.listar('materiais', usuario).map((m) => ({ id: m.id, nome: m.dados.nome }))
               : [],
+          planejamentos: consulta('planejamento')
+            ? banco.listar('planejamentos', usuario).map((p) => ({
+                id: p.id,
+                nome: p.dados.nome,
+                aulaId: p.dados.aulaId,
+              }))
+            : [],
           pacotes: consulta('agendamento', 'pagamentos')
             ? banco.listar('pacotes', usuario).map((p) => ({ id: p.id, nome: p.dados.nome })) : [],
           pagamentos: consulta('pagamentos') ? ref.pagamentos : [],

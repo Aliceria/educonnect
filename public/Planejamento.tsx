@@ -7,7 +7,8 @@ export default function Planejamento() {
 
   return (
     <>
-      <h2>Planejamento</h2>
+      <h2>Planejamento pedagógico</h2>
+      <p>Planeje as aulas, acompanhe os conteúdos trabalhados e registre os resultados.</p>
 
       <Cadastro
         titulo="Planos de aula"
@@ -16,8 +17,9 @@ export default function Planejamento() {
         campos={[
           { nome: 'aulaId', rotulo: 'Aula', fonte: 'aulas' },
           { nome: 'previsto', rotulo: 'Conteúdo previsto', tipo: 'area' },
-          { nome: 'objetivos', rotulo: 'Objetivos', tipo: 'area' },
-          { nome: 'atividades', rotulo: 'Atividades', tipo: 'area', opcional: true },
+          { nome: 'objetivos', rotulo: 'Objetivos da aula', tipo: 'area' },
+          { nome: 'metodologia', rotulo: 'Metodologia de ensino', tipo: 'area', opcional: true },
+          { nome: 'atividades', rotulo: 'Atividades planejadas', tipo: 'area', opcional: true },
           {
             nome: 'conteudos',
             rotulo: 'Conteúdos cadastrados',
@@ -33,30 +35,42 @@ export default function Planejamento() {
             opcional: true,
           },
           { nome: 'trabalhado', rotulo: 'Conteúdo realmente trabalhado', tipo: 'area', opcional: true },
+          { nome: 'resultado', rotulo: 'Resultado da aula', tipo: 'area', opcional: true },
+          { nome: 'observacoes', rotulo: 'Observações do professor', tipo: 'area', opcional: true },
           {
-            nome: 'tarefa',
-            rotulo: 'Tarefa de casa e orientações',
-            tipo: 'area',
-            opcional: true,
+            nome: 'statusConteudo',
+            rotulo: 'Status do conteúdo',
+            opcoes: ['Planejado', 'Em andamento', 'Concluído'],
+            inicial: 'Planejado',
           },
-          { nome: 'retomar', rotulo: 'Retomar na próxima aula', tipo: 'area', opcional: true },
+          { nome: 'tarefa', rotulo: 'Tarefa de casa e orientações', tipo: 'area', opcional: true },
+          { nome: 'retomar', rotulo: 'Conteúdo a retomar na próxima aula', tipo: 'area', opcional: true },
         ]}
       />
 
       <Cadastro
         titulo="Modelos reutilizáveis"
         tipo="modelos"
-        acoes={(r) => (
-          <button onClick={() => setModelo({ ...r.dados })}>Usar modelo em novo plano</button>
+        acoes={(registro) => (
+          <button
+            type="button"
+            onClick={() => {
+              const dados = { ...registro.dados };
+              delete dados.nome;
+              setModelo(dados);
+            }}
+          >
+            Usar modelo
+          </button>
         )}
         campos={[
           { nome: 'nome', rotulo: 'Nome do modelo' },
           { nome: 'previsto', rotulo: 'Conteúdo previsto', tipo: 'area' },
-          { nome: 'objetivos', rotulo: 'Objetivos', tipo: 'area' },
-          { nome: 'atividades', rotulo: 'Atividades', tipo: 'area', opcional: true },
+          { nome: 'objetivos', rotulo: 'Objetivos da aula', tipo: 'area' },
+          { nome: 'metodologia', rotulo: 'Metodologia de ensino', tipo: 'area', opcional: true },
+          { nome: 'atividades', rotulo: 'Atividades planejadas', tipo: 'area', opcional: true },
         ]}
       />
     </>
   );
 }
-
