@@ -27,14 +27,20 @@ export function validarAluno(d: Dados, banco: Banco, usuario: Usuario) {
   } catch (erro) {
     throw new ErroCadastro((erro as Error).message);
   }
+  const modalidade = escolha(d, 'modalidade', ['Presencial', 'On-line', 'Híbrida']);
+  const endereco = texto(d, 'endereco', false);
+  if (modalidade !== 'On-line' && !endereco)
+    throw new ErroCadastro(
+      'Informe o endereço do aluno: o campo é obrigatório nas modalidades Presencial e Híbrida e opcional apenas em On-line.',
+    );
   return {
     nome, idade, telefone,
     email: texto(d, 'email', false), professorId, responsavel, contatoResponsavel,
     emailResponsavel: texto(d, 'emailResponsavel', false), parentesco: texto(d, 'parentesco', idade < 18),
     autorizacao: texto(d, 'autorizacao', false), escola: texto(d, 'escola', false), serie,
     disciplina: texto(d, 'disciplina'), dificuldade: texto(d, 'dificuldade', false),
-    objetivo: texto(d, 'objetivo'), modalidade: escolha(d, 'modalidade', ['Presencial', 'On-line', 'Híbrida']),
-    endereco: texto(d, 'endereco', false), disponibilidade: texto(d, 'disponibilidade', false),
+    objetivo: texto(d, 'objetivo'),
+    modalidade, endereco, disponibilidade: texto(d, 'disponibilidade', false),
     observacoes: texto(d, 'observacoes', false), status: escolha(d, 'status', ['Ativo', 'Inativo']),
   };
 }

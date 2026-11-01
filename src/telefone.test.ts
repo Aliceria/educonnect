@@ -31,7 +31,7 @@ test('cadastro no servidor rejeita telefone inválido mesmo sem validação da i
     const dados = { professorId: 'prof', idade: 20, nome: 'Aluno', telefone: 'abc @#$',
       responsavel: '', contatoResponsavel: '', email: '', emailResponsavel: '', parentesco: '',
       autorizacao: '', escola: '', serie: '', disciplina: 'Matemática', dificuldade: '',
-      objetivo: 'Reforço', modalidade: 'Presencial', endereco: '', disponibilidade: '',
+      objetivo: 'Reforço', modalidade: 'Presencial', endereco: 'Rua Teste, 100', disponibilidade: '',
       observacoes: '', status: 'Ativo' };
     assert.throws(() => validarAluno(dados, banco, usuario),
       (erro: unknown) => erro instanceof ErroCadastro && erro.status === 400);
@@ -54,7 +54,7 @@ test('telefone do responsável aceita o mesmo formato dos demais telefones', () 
     const menor = { professorId: 'prof', idade: 14, nome: 'Aluno Menor', telefone: '', email: '',
       emailResponsavel: '', parentesco: 'Mãe', autorizacao: '', escola: '', serie: '',
       dificuldade: '', disciplina: 'Matemática', objetivo: 'Reforço', modalidade: 'Presencial',
-      endereco: '', disponibilidade: '', observacoes: '', status: 'Ativo',
+      endereco: 'Rua Teste, 100', disponibilidade: '', observacoes: '', status: 'Ativo',
       responsavel: 'Maria Teste' };
     const recusa = (erro: unknown) => erro instanceof ErroCadastro && erro.status === 400;
     for (const invalido of ['abcXYZ@@123', 'abcXYZ', '@@@###!!!', '123'])

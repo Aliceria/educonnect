@@ -133,7 +133,7 @@ test('API salva material e upload juntos, protege o acesso e evita compartilhame
     const aluno = (await req('/registros/alunos', 'POST', {dados: {nome: 'Aluno Teste', idade: 20,
       professorId: prof.id, telefone: '', email: '', responsavel: '', contatoResponsavel: '', emailResponsavel: '',
       parentesco: '', autorizacao: '', escola: '', serie: '', disciplina: 'Matemática', dificuldade: '', objetivo: 'Reforço',
-      modalidade: 'Presencial', endereco: '', disponibilidade: '', observacoes: '', status: 'Ativo'}})).data;
+      modalidade: 'Presencial', endereco: 'Rua Teste, 100', disponibilidade: '', observacoes: '', status: 'Ativo'}})).data;
     const disciplina = (await req('/registros/disciplinas', 'POST', {dados: {nome: 'Matemática', descricao: '', status: 'Ativa'}})).data;
     const dados = {nome: 'Lista', descricao: 'Frações', disciplinaId: disciplina.id, conteudoId: '',
       aulaId: '', alunoId: aluno.id, link: '', tipo: 'PDF', status: 'Ativo'};

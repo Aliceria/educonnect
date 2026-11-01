@@ -59,7 +59,7 @@ async function cenario() {
       alunos.push(await criar('alunos', { nome: 'Aluno ' + nome, idade: 14, professorId: p.dados.id,
         telefone: '', email: '', responsavel: 'Responsável Teste', contatoResponsavel: '11987654321',
         emailResponsavel: '', parentesco: 'Mãe', autorizacao: '', escola: '', serie: '', disciplina: 'Matemática',
-        dificuldade: '', objetivo: 'Reforço', modalidade: 'Presencial', endereco: '', disponibilidade: '',
+        dificuldade: '', objetivo: 'Reforço', modalidade: 'Presencial', endereco: 'Rua Teste, 100', disponibilidade: '',
         observacoes: '', status: 'Ativo' }));
       await criar('aulas', { alunoId: alunos[indice].id, data: '2026-01-05', hora: '10:00',
         duracaoMinutos: 60, status: 'Realizada', modalidade: 'Presencial', disciplina: 'Matemática',

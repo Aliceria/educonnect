@@ -18,6 +18,8 @@ export type Campo = {
   passo?: number;
   inicial?: string | number;
   nomePessoa?: boolean;
+  obrigatorioQuando?: { campo: string; valores: string[] };
+  ajuda?: string;
 };
 export type Referencia = {
   id: string;
@@ -208,6 +210,11 @@ export default function Cadastro({
             <div className="campos">
               {campos.map((c) => {
                 const valor = String(form[c.nome] ?? '');
+                const obrigatorio = c.obrigatorioQuando
+                  ? c.obrigatorioQuando.valores.includes(
+                      String(form[c.obrigatorioQuando.campo] ?? ''),
+                    )
+                  : !c.opcional;
                 const opcoes = (referencias[c.fonte ?? ''] ?? []).filter(
                   (r) =>
                     (!c.depende || r.dados?.[c.depende] === form[c.depende]) &&
@@ -216,10 +223,10 @@ export default function Cadastro({
                 return (
                   <label key={c.nome}>
                     {c.rotulo}
-                    {!c.opcional && ' *'}
+                    {obrigatorio && ' *'}
                     {c.fonte || c.opcoes ? (
                       <select
-                        required={!c.opcional}
+                        required={obrigatorio}
                         multiple={c.tipo === 'multiplo'}
                         value={c.tipo === 'multiplo' ? valor.split(',').filter(Boolean) : valor}
                         onChange={(e) =>
@@ -245,14 +252,14 @@ export default function Cadastro({
                       </select>
                     ) : c.tipo === 'area' ? (
                       <textarea
-                        required={!c.opcional}
+                        required={obrigatorio}
                         maxLength={2000}
                         value={valor}
                         onChange={(e) => mudar(c, e.target.value)}
                       />
                     ) : (
                       <input
-                        required={!c.opcional}
+                        required={obrigatorio}
                         type={
                           c.tipo === 'numero'
                             ? 'number'
@@ -288,6 +295,7 @@ export default function Cadastro({
                     )}
                     {c.tipo === 'telefone' && <small>{avisoTelefone}</small>}
                     {c.nomePessoa && <small>{avisoNome}</small>}
+                    {c.ajuda && <small>{c.ajuda}</small>}
                     {c.fonte && opcoes.length === 0 && (
                       <small>
                         Nenhuma opção disponível. Cadastre os dados primeiro ou conecte a fonte
