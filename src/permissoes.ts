@@ -49,6 +49,9 @@ export const permissoesRelatorio: Record<string, string[]> = {
   faturamento: ['alunos', 'pagamentos', 'financeiro'],
 };
 
+// Relatórios que descrevem um único aluno exigem a seleção dele.
+export const relatoriosPorAluno = ['individual', 'responsavel', 'evolucao'];
+
 export function podeGerarRelatorio(usuario: Usuario, tipo: string): boolean {
   return podeAcessar(usuario, 'relatorios') && Object.hasOwn(permissoesRelatorio, tipo) &&
     permissoesRelatorio[tipo].every(modulo => podeAcessar(usuario, modulo));

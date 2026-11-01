@@ -35,7 +35,7 @@ relatórios em um único ambiente.
 - materiais compartilhados com anexos
 - gestão de pacotes, pagamentos e financeiros
 - dashboard com resumo do dia e pendências
-- relatórios e exportação em PDF
+- relatórios individuais por aluno (frequência, avaliações, evolução e financeiro) com exportação em PDF
 - histórico e auditoria de ações
 - backup local do banco
 - autenticação com perfis e sessões
@@ -214,6 +214,29 @@ não podem ser excluídas enquanto esses vínculos existirem.
 | `GET` | `/api/compartilhados/:id` | acessa material compartilhado |
 | `GET` | `/api/relatorios` | gera relatório |
 | `GET` | `/api/relatorios/pdf` | exporta relatório em PDF |
+
+### Relatórios
+
+A tela de Relatórios consulta um aluno por vez e mostra os dados gerais dele
+antes dos registros. O PDF é gerado a partir da mesma consulta, com cabeçalho
+em todas as páginas, tabelas e numeração de páginas.
+
+| Tipo (`tipo`) | Conteúdo |
+| --- | --- |
+| `individual` | dados do aluno, frequência, conteúdos dominados, avaliações e acompanhamentos |
+| `responsavel` | mesma visão do relatório individual, voltada ao responsável |
+| `evolucao` | notas em ordem cronológica, tendência de aproveitamento e situação dos conteúdos |
+| `frequencia` | presenças, faltas, justificativas e percentual de frequência |
+| `avaliacoes` | notas, aproveitamento e dificuldades de cada avaliação |
+| `aulas`, `canceladas`, `conteudos`, `horas` | aulas realizadas ou canceladas, conteúdos e horas trabalhadas |
+| `financeiro`, `pendentes`, `faturamento` | lançamentos, recebido, em aberto, vencido e faturamento por mês |
+
+Os tipos `individual`, `responsavel` e `evolucao` exigem `alunoId`; os demais
+aceitam `alunoId` (um aluno) ou a lista completa do acesso. `inicio` e `fim`
+(AAAA-MM-DD) filtram frequência, avaliações, aulas, acompanhamentos e
+vencimentos; em `faturamento` o filtro usa a data de recebimento. Cada tipo é
+liberado conforme as permissões do usuário e os relatórios leem os registros
+na hora da consulta, refletindo as alterações feitas nos módulos.
 
 ### Financeiro e sistema
 

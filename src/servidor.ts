@@ -673,11 +673,17 @@ export function criarServidor(caminhoBanco: string, fontesExternas?: Fontes, pas
         permitir(usuario, 'relatorios');
         const relatorio = gerarRelatorio(banco, usuario, fontes, url.searchParams);
         if (caminho.endsWith('/pdf')) {
-          const pdf = await gerarPdf(relatorio);
+          const ajustes = lerConfiguracoes(banco);
+          const pdf = await gerarPdf(relatorio, {
+            instituicao: ajustes.instituicao,
+            contato: ajustes.contato,
+          });
           banco.evento(usuario, 'relatorios', 'PDF exportado', '', {
             tipo: url.searchParams.get('tipo'),
+            alunoId: url.searchParams.get('alunoId') ?? undefined,
           });
-          arquivo(pdf, 'relatorio.pdf', 'application/pdf');
+          const nome = `relatorio-${url.searchParams.get('tipo') ?? 'individual'}.pdf`;
+          arquivo(pdf, nome, 'application/pdf');
         } else responder(200, relatorio);
         return;
       }

@@ -3,7 +3,7 @@ import { api } from './api';
 import type { Aluno } from '../src/integracao';
 import type { Relatorio } from '../src/modulos/Relatorios';
 import type { Usuario } from '../src/banco';
-import { podeGerarRelatorio } from '../src/permissoes';
+import { podeGerarRelatorio, relatoriosPorAluno } from '../src/permissoes';
 
 const opcoes = {
   individual: 'Individual do aluno',
@@ -29,6 +29,7 @@ export default function Relatorios() {
   const [consulta, setConsulta] = useState('');
   const [erro, setErro] = useState('');
   const [ocupado, setOcupado] = useState(false);
+  const [baixando, setBaixando] = useState(false);
   const [tiposPermitidos, setTiposPermitidos] = useState<string[]>([]);
   useEffect(() => {
     const carregar = () => {
@@ -45,6 +46,7 @@ export default function Relatorios() {
     window.addEventListener('cadastro-atualizado', carregar);
     return () => window.removeEventListener('cadastro-atualizado', carregar);
   }, []);
+  const exigeAluno = relatoriosPorAluno.includes(tipo);
   async function gerar() {
     setOcupado(true);
     setErro('');
@@ -57,6 +59,39 @@ export default function Relatorios() {
       setErro((e as Error).message);
     } finally {
       setOcupado(false);
+    }
+  }
+  async function baixarPdf() {
+    setBaixando(true);
+    setErro('');
+    try {
+      const resposta = await fetch(`/api/relatorios/pdf?${consulta}`, {
+        credentials: 'same-origin',
+        signal: AbortSignal.timeout(60000),
+      });
+      if (!resposta.ok) {
+        const corpo = await resposta.json().catch(() => null);
+        throw new Error(
+          corpo?.erro ??
+            (resposta.status === 401
+              ? 'Sessão encerrada. Entre novamente para exportar o relatório.'
+              : 'Não foi possível gerar o PDF do relatório.'),
+        );
+      }
+      const arquivo = await resposta.blob();
+      if (!arquivo.size) throw new Error('O arquivo PDF veio vazio. Gere o relatório novamente.');
+      const url = URL.createObjectURL(arquivo);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `relatorio-${tipo}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (e) {
+      setErro((e as Error).message);
+    } finally {
+      setBaixando(false);
     }
   }
   return (
@@ -77,7 +112,7 @@ export default function Relatorios() {
         <label>
           Aluno
           <select value={alunoId} onChange={(e) => setAlunoId(e.target.value)}>
-            <option value="">{tipo === 'responsavel' ? 'Selecione um aluno' : 'Todos'}</option>
+            <option value="">{exigeAluno ? 'Selecione um aluno' : 'Todos'}</option>
             {alunos.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.nome}
@@ -94,7 +129,12 @@ export default function Relatorios() {
           <input type="date" value={fim} onChange={(e) => setFim(e.target.value)} />
         </label>
       </div>
-      <button disabled={ocupado || !tiposPermitidos.includes(tipo) || (tipo === 'responsavel' && !alunoId)} onClick={gerar}>
+      <p className="observacao">
+        {exigeAluno
+          ? 'Os relatórios individuais, de evolução e para o responsável precisam de um aluno selecionado.'
+          : 'Sem aluno selecionado, o relatório reúne todos os alunos com acesso a este usuário. Use o período para limitar as datas.'}
+      </p>
+      <button disabled={ocupado || !tiposPermitidos.includes(tipo) || (exigeAluno && !alunoId)} onClick={gerar}>
         Gerar relatório
       </button>
       {erro && (
@@ -103,24 +143,54 @@ export default function Relatorios() {
         </p>
       )}
       {resultado && (
-        <>
-          <h3>{resultado.titulo}</h3>
-          <p>{resultado.periodo}</p>
-          {resultado.resumo.map((r, i) => (
-            <p key={i}>{r}</p>
-          ))}
-          {resultado.avisos.map((r, i) => (
-            <p className="observacao" key={i}>
-              {r}
-            </p>
-          ))}
-          <p>
-            <a href={`/api/relatorios/pdf?${consulta}`} download="relatorio.pdf">
-              Baixar PDF deste relatório
-            </a>
-          </p>
+        <section className="relatorio" aria-label={resultado.titulo}>
+          <header className="relatorio-cabecalho">
+            <div>
+              <p className="relatorio-sobretitulo">Relatório gerado</p>
+              <h3>{resultado.titulo}</h3>
+              <p className="observacao">
+                {resultado.aluno} · {resultado.periodo}
+              </p>
+              <p className="observacao">
+                Gerado em {new Date(resultado.geradoEm).toLocaleString('pt-BR')}
+              </p>
+            </div>
+            <button disabled={baixando} onClick={baixarPdf}>
+              {baixando ? 'Gerando PDF...' : 'Exportar em PDF'}
+            </button>
+          </header>
+          {!!resultado.ficha.length && (
+            <dl className="relatorio-ficha">
+              {resultado.ficha.map((campo) => (
+                <div className="relatorio-ficha-item" key={campo.rotulo}>
+                  <dt>{campo.rotulo}</dt>
+                  <dd>{campo.valor}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {!!resultado.resumo.length && (
+            <>
+              <h4>Resumo</h4>
+              <ul className="relatorio-resumo">
+                {resultado.resumo.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          {!!resultado.avisos.length && (
+            <ul className="relatorio-avisos">
+              {resultado.avisos.map((r, i) => (
+                <li className="observacao" key={i}>
+                  {r}
+                </li>
+              ))}
+            </ul>
+          )}
+          <h4>Registros</h4>
           {!resultado.linhas.length ? (
-            <p>Nenhum registro encontrado.</p>
+            <p className="relatorio-vazio">Nenhum registro encontrado para os filtros selecionados.</p>
           ) : (
             <div className="tabela">
               <table>
@@ -143,7 +213,7 @@ export default function Relatorios() {
               </table>
             </div>
           )}
-        </>
+        </section>
       )}
     </div>
   );

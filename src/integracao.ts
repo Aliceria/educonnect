@@ -10,6 +10,15 @@ export type Aluno = {
   professorId: string;
   responsavel?: string;
   status?: string;
+  idade?: number;
+  serie?: string;
+  escola?: string;
+  modalidade?: string;
+  disciplina?: string;
+  objetivo?: string;
+  parentesco?: string;
+  contatoResponsavel?: string;
+  emailResponsavel?: string;
 };
 export type Aula = {
   id: string;
@@ -23,6 +32,7 @@ export type Aula = {
 };
 export type Pagamento = {
   id: string;
+  nome: string;
   alunoId: string;
   professorId: string;
   vencimento: string;
@@ -47,6 +57,15 @@ export function fontesDoBanco(banco: Banco): Fontes {
         professorId: a.professorId,
         responsavel: a.responsavel,
         status: a.status,
+        idade: a.idade,
+        serie: a.serie,
+        escola: a.escola,
+        modalidade: a.modalidade,
+        disciplina: a.disciplina,
+        objetivo: a.objetivo,
+        parentesco: a.parentesco,
+        contatoResponsavel: a.contatoResponsavel,
+        emailResponsavel: a.emailResponsavel,
       })),
     aulas: () => {
       const planos = new Map(registros('planejamentos').map((p) => [p.aulaId, p]));
@@ -67,6 +86,7 @@ export function fontesDoBanco(banco: Banco): Fontes {
     pagamentos: () =>
       registros('pagamentos').map((p) => ({
         id: p.id,
+        nome: String(p.nome ?? ''),
         alunoId: p.alunoId,
         professorId: p.professorId,
         vencimento: p.vencimento,

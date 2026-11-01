@@ -737,3 +737,20 @@ summary {
   .ficha-aluno-acoes button { flex: 1; }
   .ficha-aluno-historico-cabecalho select { width: 100%; }
 }
+
+.relatorio { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--borda); }
+.relatorio-cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.relatorio-cabecalho h3 { margin: 2px 0 8px; font-size: 18px; color: #293b37; }
+.relatorio-cabecalho p { margin: 0 0 4px; }
+.relatorio-sobretitulo { color: var(--verde); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.relatorio-ficha { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px 18px; margin: 18px 0 0; }
+.relatorio-ficha-item { min-width: 0; padding: 12px 14px; border: 1px solid var(--borda); border-radius: 6px; background: #fbfcfc; }
+.relatorio-ficha-item dt { margin-bottom: 4px; color: var(--muted); font-size: 11px; }
+.relatorio-ficha-item dd { margin: 0; color: #293b37; white-space: pre-wrap; overflow-wrap: anywhere; }
+.relatorio-resumo, .relatorio-avisos { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 6px; line-height: 1.6; }
+.relatorio-avisos { padding-left: 16px; }
+.relatorio-vazio { padding: 14px 16px; color: var(--muted); background: #f7f9f8; border: 1px dashed var(--borda); border-radius: 6px; }
+@media (max-width: 640px) {
+  .relatorio-cabecalho { flex-direction: column; align-items: stretch; }
+  .relatorio-cabecalho button { width: 100%; }
+}
