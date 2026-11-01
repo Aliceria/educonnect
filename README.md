@@ -14,6 +14,7 @@ relatórios em um único ambiente.
 - [Fluxo do sistema](#fluxo-do-sistema)
 - [Rotas principais](#rotas-principais)
 - [Banco de dados](#banco-de-dados)
+- [Segurança](#segurança)
 - [Diagrama Entidade Relacionamento](#diagrama-entidade-relacionamento)
 - [Privacidade](#privacidade)
 
@@ -239,6 +240,32 @@ Principais entidades:
 - `planejamentos`, `acompanhamentos`, `avaliacoes` e `presencas`
 - `disciplinas`, `materiais`, `anexos` e `compartilhamentos`
 - `pacotes`, `pagamentos`, `solicitacoes`, `historico` e `ajustes`
+
+## Segurança
+
+- Senhas são armazenadas com `scrypt`, salt aleatório e comparação em tempo
+  constante. O sistema nunca devolve o hash pela API.
+- O login cria tokens aleatórios de sessão; somente o SHA-256 do token fica no
+  banco. O cookie é `HttpOnly` e `SameSite=Strict`; sessões expiram por
+  inatividade conforme a configuração e têm duração máxima de 12 horas.
+- A recuperação exige um código aleatório de uso único. O banco guarda somente
+  o hash do código; a recuperação invalida sessões existentes e emite um novo
+  código.
+- As rotas verificam sessão, perfil e permissão no backend. Os anexos só são
+  entregues após autorização, e o upload valida tamanho, codificação e tipo
+  real do arquivo.
+- Ações de cadastro, alteração, exclusão, autenticação e operações relevantes
+  são registradas no histórico. A consulta exige permissão e os campos
+  sensíveis são mascarados nos detalhes.
+- Backups SQLite são disponibilizados somente a administradores. A pasta e os
+  arquivos de backup recebem permissões restritas ao usuário que executa o
+  backend (e ao SYSTEM no Windows).
+
+Os backups locais não são criptografados. Proteja a conta do sistema
+operacional, o banco principal e as cópias externas; não exponha a pasta
+`dados/` a outros usuários ou serviços. Para restaurar, pare o backend, guarde
+uma cópia do banco atual e substitua `dados/educonnect.sqlite` pelo arquivo de
+backup. Depois inicie o backend e valide os dados restaurados.
 
 ## Diagrama Entidade Relacionamento
 

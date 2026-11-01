@@ -1,6 +1,7 @@
 import { backup } from 'node:sqlite';
-import { mkdirSync, readdirSync, statSync, renameSync, rmSync } from 'node:fs';
+import { chmodSync, mkdirSync, readdirSync, statSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { texto, numero, permitir } from '../banco.ts';
 import type { Banco, Dados, Usuario } from '../banco.ts';
 import { ErroCadastro } from './Professores.ts';
@@ -17,6 +18,30 @@ export const padrao = {
   sessaoMinutos: 20,
   backupHoras: 24,
 };
+
+function protegerCaminho(caminho: string, diretorio: boolean) {
+  if (process.platform !== 'win32') {
+    chmodSync(caminho, diretorio ? 0o700 : 0o600);
+    return;
+  }
+
+  const identidade = execFileSync('whoami.exe', ['/user', '/fo', 'csv', '/nh'], {
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+  const sid = identidade.match(/"([^"]+)"\s*$/m)?.[1];
+  if (!sid || !/^S-\d-(?:\d+-)+\d+$/.test(sid))
+    throw new ErroCadastro('Não foi possível identificar a conta para proteger o backup.');
+
+  const permissao = diretorio ? '(OI)(CI)F' : 'F';
+  const regras = [...new Set(['*S-1-5-18', `*${sid}`])]
+    .map((id) => `${id}:${permissao}`);
+  execFileSync('icacls.exe', [caminho, '/inheritance:r', '/grant:r', ...regras], {
+    stdio: 'pipe',
+    windowsHide: true,
+  });
+}
+
 export function lerConfiguracoes(banco: Banco) {
   const linha = banco.db.prepare("SELECT dados FROM ajustes WHERE chave='geral'").get();
   return { ...padrao, ...(linha ? JSON.parse(String(linha.dados)) : {}) } as typeof padrao;
@@ -52,11 +77,19 @@ export function salvarConfiguracoes(banco: Banco, usuario: Usuario, d: Dados) {
 export function backups(banco: Banco, pasta: string) {
   let ocupado = false;
   let ultimaFalha = '';
-  function listar() {
+  function prepararPasta() {
     mkdirSync(pasta, { recursive: true });
+    protegerCaminho(pasta, true);
+  }
+  function listar() {
+    prepararPasta();
     return readdirSync(pasta)
       .filter((nome) => /^backup-[\dT-]+\.sqlite$/.test(nome))
-      .map((nome) => ({ nome, tamanho: statSync(join(pasta, nome)).size }))
+      .map((nome) => {
+        const caminho = join(pasta, nome);
+        protegerCaminho(caminho, false);
+        return { nome, tamanho: statSync(caminho).size };
+      })
       .reverse();
   }
   async function criar(usuario: Usuario) {
@@ -64,11 +97,13 @@ export function backups(banco: Banco, pasta: string) {
     ocupado = true;
     let temporario = '';
     try {
-      mkdirSync(pasta, { recursive: true });
+      prepararPasta();
       const nome = `backup-${new Date().toISOString().replace(/[:.Z]/g, '-')}.sqlite`;
       temporario = join(pasta, `${nome}.partial`);
       await backup(banco.db, temporario);
+      protegerCaminho(temporario, false);
       renameSync(temporario, join(pasta, nome));
+      protegerCaminho(join(pasta, nome), false);
       banco.db
         .prepare(
           "INSERT INTO ajustes VALUES ('ultimoBackup',?) ON CONFLICT(chave) DO UPDATE SET dados=excluded.dados",
