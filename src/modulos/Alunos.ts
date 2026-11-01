@@ -14,8 +14,8 @@ export function validarAluno(d: Dados, banco: Banco, usuario: Usuario) {
   const idade = numero(d, 'idade', 1, 120);
   if (!Number.isInteger(idade)) throw new ErroCadastro('Informe uma idade inteira.');
   let responsavel = texto(d, 'responsavel', idade < 18, 150);
-  const contatoResponsavel = texto(d, 'contatoResponsavel', idade < 18);
   let telefone: string;
+  let contatoResponsavel: string;
   let nome: string;
   let serie: string;
   try {
@@ -23,6 +23,7 @@ export function validarAluno(d: Dados, banco: Banco, usuario: Usuario) {
     serie = validarSerie(texto(d, 'serie', false));
     nome = normalizarNome(texto(d, 'nome', true, 150));
     telefone = normalizarTelefone(texto(d, 'telefone', false));
+    contatoResponsavel = normalizarTelefone(texto(d, 'contatoResponsavel', idade < 18));
   } catch (erro) {
     throw new ErroCadastro((erro as Error).message);
   }

@@ -42,3 +42,41 @@ test('cadastro no servidor rejeita telefone inválido mesmo sem validação da i
     banco.fechar();
   }
 });
+
+test('telefone do responsável aceita o mesmo formato dos demais telefones', () => {
+  const banco = abrirBanco(':memory:');
+  try {
+    abrirProfessores(banco.db);
+    banco.db.prepare('INSERT INTO professores (id,email,versao,cadastro) VALUES (?,?,?,?)')
+      .run('prof', 'prof@example.com', 1, JSON.stringify({ ativo: true }));
+    const usuario: Usuario = { id: 'qa', nome: 'QA', email: '', perfil: 'Administrador',
+      professorId: '', permissoes: [], ativo: true };
+    const menor = { professorId: 'prof', idade: 14, nome: 'Aluno Menor', telefone: '', email: '',
+      emailResponsavel: '', parentesco: 'Mãe', autorizacao: '', escola: '', serie: '',
+      dificuldade: '', disciplina: 'Matemática', objetivo: 'Reforço', modalidade: 'Presencial',
+      endereco: '', disponibilidade: '', observacoes: '', status: 'Ativo',
+      responsavel: 'Maria Teste' };
+    const recusa = (erro: unknown) => erro instanceof ErroCadastro && erro.status === 400;
+    for (const invalido of ['abcXYZ@@123', 'abcXYZ', '@@@###!!!', '123'])
+      assert.throws(
+        () => validarAluno({ ...menor, contatoResponsavel: invalido }, banco, usuario),
+        recusa,
+      );
+    assert.throws(
+      () => validarAluno({ ...menor, contatoResponsavel: '' }, banco, usuario),
+      /contatoResponsavel/,
+    );
+    assert.equal(
+      validarAluno({ ...menor, contatoResponsavel: '(11) 99999-9999' }, banco, usuario)
+        .contatoResponsavel,
+      '11999999999',
+    );
+    assert.equal(
+      validarAluno({ ...menor, contatoResponsavel: '+55 (11) 98888-7777' }, banco, usuario)
+        .contatoResponsavel,
+      '5511988887777',
+    );
+  } finally {
+    banco.fechar();
+  }
+});

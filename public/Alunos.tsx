@@ -19,7 +19,7 @@ const campos: Campo[] = [
     nomePessoa: true,
     opcional: true,
   },
-  { nome: 'contatoResponsavel', rotulo: 'Telefone do responsável', opcional: true },
+  { nome: 'contatoResponsavel', rotulo: 'Telefone do responsável', tipo: 'telefone', opcional: true },
   { nome: 'emailResponsavel', rotulo: 'E-mail do responsável', opcional: true },
   { nome: 'parentesco', rotulo: 'Parentesco', opcional: true },
   {
