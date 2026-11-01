@@ -58,6 +58,8 @@ test('endereço é obrigatório nas modalidades presencial e híbrida', () => {
   const { banco, usuario, aluno } = cenario();
   try {
     assert.equal(validarAluno(aluno, banco, usuario).endereco, 'Rua B, 100');
+    assert.equal(validarAluno(aluno, banco, usuario).idade, 14);
+    assert.throws(() => validarAluno({ ...aluno, idade: 15.5 }, banco, usuario), /idade inteira/);
     assert.throws(() => validarAluno({ ...aluno, endereco: '' }, banco, usuario), /endereço/);
     assert.throws(() => validarAluno({ ...aluno, endereco: '   ' }, banco, usuario), /endereço/);
     assert.throws(
@@ -153,6 +155,11 @@ test('API bloqueia cadastro presencial sem endereço e aceita on-line', async ()
     const semEndereco = await req('/registros/alunos', 'POST', { dados });
     assert.equal(semEndereco.status, 400);
     assert.match(semEndereco.dados.erro, /endereço/);
+    const idadeDecimal = await req('/registros/alunos', 'POST', {
+      dados: { ...dados, endereco: 'Rua B, 100', idade: 15.01 },
+    });
+    assert.equal(idadeDecimal.status, 400);
+    assert.match(idadeDecimal.dados.erro, /idade inteira/);
     const hibrida = await req('/registros/alunos', 'POST', {
       dados: { ...dados, modalidade: 'Híbrida' },
     });

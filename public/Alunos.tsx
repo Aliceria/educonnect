@@ -6,7 +6,7 @@ import { series } from '../src/serie';
 
 const campos: Campo[] = [
   { nome: 'nome', rotulo: 'Nome completo', nomePessoa: true },
-  { nome: 'idade', rotulo: 'Idade', tipo: 'numero', minimo: 1 },
+  { nome: 'idade', rotulo: 'Idade', tipo: 'numero', minimo: 1, maximo: 120, inteiro: true },
   { nome: 'professorId', rotulo: 'Professor responsável', fonte: 'professores' },
   { nome: 'telefone', rotulo: 'Telefone', tipo: 'telefone', opcional: true },
   { nome: 'email', rotulo: 'E-mail', opcional: true },

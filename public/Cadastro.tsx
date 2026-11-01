@@ -16,6 +16,7 @@ export type Campo = {
   minimo?: number;
   maximo?: number;
   passo?: number;
+  inteiro?: boolean;
   inicial?: string | number;
   nomePessoa?: boolean;
   obrigatorioQuando?: { campo: string; valores: string[] };
@@ -275,7 +276,9 @@ export default function Cadastro({
                           c.tipo === 'hora'
                             ? 60
                             : c.tipo === 'numero'
-                              ? (c.passo ?? 0.01)
+                              ? c.inteiro
+                                ? 1
+                                : (c.passo ?? 0.01)
                               : undefined
                         }
                         maxLength={2000}
